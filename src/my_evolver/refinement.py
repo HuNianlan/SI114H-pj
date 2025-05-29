@@ -1,4 +1,4 @@
-from Geometric_Elements import Vertex,Facet,Edge,find_vertex_by_coordinates
+from Geometric_Elements import Vertex,Facet,Edge,find_vertex_by_coordinates,find_edge_by_vertices
 from Geometric_Elements import VERTEXS,FACETS,EDGES
 from utils import get_para
 def single_facet_refinement(facet:Facet):
@@ -31,6 +31,14 @@ def single_facet_refinement(facet:Facet):
     EDGES.append(Edge(mid12,mid23))
     EDGES.append(Edge(mid23,mid31))
     EDGES.append(Edge(mid31,mid12))
+
+    EDGES.append(Edge(v1, mid12)) if find_edge_by_vertices(v1, mid12) is None else None
+    EDGES.append(Edge(v2, mid23)) if find_edge_by_vertices(v2, mid23) is None else None
+    EDGES.append(Edge(v3, mid31)) if find_edge_by_vertices(v3, mid31) is None else None
+    EDGES.append(Edge(mid12, v2)) if find_edge_by_vertices(mid12, v2) is None else None
+    EDGES.append(Edge(mid23, v3)) if find_edge_by_vertices(mid23, v3) is None else None
+    EDGES.append(Edge(mid31, v1)) if find_edge_by_vertices(mid31, v1) is None else None
+
     # Create new facets
     FACETS.append(Facet(v1, mid12, mid31))
     FACETS.append(Facet(mid12, v2, mid23))
@@ -42,7 +50,9 @@ def single_facet_refinement(facet:Facet):
 
 
 def refinement():
-    """Refine a list of facets by subdividing each facet into four new facets."""
+    """Refine a list of facets by subdividing each facet into four new facets.
+    (|V|,|E|,|F|) -> (|V|+|E|, 2|E|+3|F|, 4|F|)
+    """
     n = len(FACETS)
     m = len(EDGES)
     for i in range(n):

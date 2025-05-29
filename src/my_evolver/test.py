@@ -26,7 +26,7 @@ face_list = [[1,10,-5,-9],
 initialize(vertex_list, edge_list, face_list)
 
 refinement()
-
+refinement()
 
 
 import polyscope as ps
