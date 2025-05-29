@@ -1,6 +1,6 @@
-from Geometric_elements import Vertex,Facet
-from Geometric_elements import VERTEXS, EDGES, FACETS
-
+from Geometric_Elements import Vertex,Facet,Edge,find_vertex_by_coordinates
+from Geometric_Elements import VERTEXS,FACETS,EDGES
+from utils import get_para
 def single_facet_refinement(facet:Facet):
     """refinement by creating new vertices at the midpoints of all edges and use these to 
     subdivide each facet into four new facets each similar to the original."""
@@ -9,13 +9,28 @@ def single_facet_refinement(facet:Facet):
     v3 = facet.vertex3
     
     # Calculate midpoints of edges
-    mid12 = Vertex((v1.x + v2.x) / 2, (v1.y + v2.y) / 2, (v1.z + v2.z) / 2)
-    mid23 = Vertex((v2.x + v3.x) / 2, (v2.y + v3.y) / 2, (v2.z + v3.z) / 2)
-    mid31 = Vertex((v3.x + v1.x) / 2, (v3.y + v1.y) / 2, (v3.z + v1.z) / 2)
+    mid12 = find_vertex_by_coordinates((v1.x + v2.x) / 2, (v1.y + v2.y) / 2, (v1.z + v2.z) / 2)
+    mid23 = find_vertex_by_coordinates((v2.x + v3.x) / 2, (v2.y + v3.y) / 2, (v2.z + v3.z) / 2)
+    mid31 = find_vertex_by_coordinates((v3.x + v1.x) / 2, (v3.y + v1.y) / 2, (v3.z + v1.z) / 2)
     
-    VERTEXS.append(mid12)
-    VERTEXS.append(mid23)   
-    VERTEXS.append(mid31)
+    if mid12 is None:
+        mid12 = Vertex((v1.x + v2.x) / 2, (v1.y + v2.y) / 2, (v1.z + v2.z) / 2)
+        VERTEXS.append(mid12)
+    if mid23 is None:
+        mid23 = Vertex((v2.x + v3.x) / 2, (v2.y + v3.y) / 2, (v2.z + v3.z) / 2)
+        VERTEXS.append(mid23)
+    if mid31 is None:   
+        mid31 = Vertex((v3.x + v1.x) / 2, (v3.y + v1.y) / 2, (v3.z + v1.z) / 2)
+        VERTEXS.append(mid31)
+
+    
+    # VERTEXS.append(mid12)
+    # VERTEXS.append(mid23)   
+    # VERTEXS.append(mid31)
+    
+    EDGES.append(Edge(mid12,mid23))
+    EDGES.append(Edge(mid23,mid31))
+    EDGES.append(Edge(mid31,mid12))
     # Create new facets
     FACETS.append(Facet(v1, mid12, mid31))
     FACETS.append(Facet(mid12, v2, mid23))
@@ -29,9 +44,10 @@ def single_facet_refinement(facet:Facet):
 def refinement():
     """Refine a list of facets by subdividing each facet into four new facets."""
     n = len(FACETS)
+    m = len(EDGES)
     for i in range(n):
         facet = FACETS[i]
         single_facet_refinement(facet)
     del FACETS[:n]
-    # for facet in FACETS:
-    #     single_facet_refinement(facet)
+    del EDGES[:m]  # Clear the edges list after refinement
+    get_para()  # Print the number of vertices, edges, and facets after refinement

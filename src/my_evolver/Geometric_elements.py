@@ -164,3 +164,17 @@ def create_facets(face_list:list[list[int]]):
         faces.append(Face(vertexs=vertex_list))
     faces_to_facets(faces)
         # FACETS.extend(faces_to_facets(faces))  # Convert face to facets and add to FACETS
+
+def find_vertex_by_coordinates(x:float, y:float, z:float) -> Vertex:
+    """Find a vertex by its coordinates."""
+    for v in VERTEXS:
+        if v.x == x and v.y == y and v.z == z:
+            return v
+    return None
+
+def find_edge_by_vertices(v1:Vertex, v2:Vertex) -> Edge:
+    """Find an edge by its two vertices."""
+    for e in EDGES:
+        if (e.vertex1.id == v1.id and e.vertex2.id == v2.id) or (e.vertex1.id == v2.id and e.vertex2.id == v1.id):
+            return e
+    return None

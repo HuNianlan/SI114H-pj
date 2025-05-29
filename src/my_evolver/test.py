@@ -1,11 +1,9 @@
-from Geometric_elements import create_edges,create_facets,create_vertices,get_facet_list,get_vertex_list
+from Geometric_Elements import get_facet_list,get_vertex_list
 import numpy as np
 from refinement import refinement
-
+from init import initialize
 
 ########################################################################################################
-from Geometric_elements import FACETS,EDGES,VERTEXS
-
 vertex_list = [[0.0,0.0,0.0],
                [1.0,0.0,0.0],
                [1.0,1.0,0.0],
@@ -25,19 +23,10 @@ face_list = [[1,10,-5,-9],
              [5,6,7,8],
              [-4,-3,-2,-1]]
 
-create_vertices(vertex_list)
-create_edges(edge_list)
-create_facets(face_list)
-# facets = faces_to_facets(faces)
-# from Geometric_elements import edge_id
-# print(edge_id)
-
-print(len(VERTEXS))
-print(len(EDGES))
-print(len(FACETS))
+initialize(vertex_list, edge_list, face_list)
 
 refinement()
-print(len(FACETS))
+
 
 
 import polyscope as ps
