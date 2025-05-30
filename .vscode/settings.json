@@ -1,0 +1,13 @@
+{
+    "files.associations": {
+        "__config": "c",
+        "__hash_table": "c",
+        "array": "c",
+        "bitset": "c",
+        "deque": "c",
+        "memory": "c",
+        "optional": "c",
+        "string_view": "c",
+        "tuple": "c"
+    }
+}

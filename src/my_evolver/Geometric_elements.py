@@ -123,6 +123,8 @@ def faces_to_facets(faces:list[Face]):
     # return facets
 
 
+
+
 VERTEXS:list[Vertex] = []
 EDGES:list[Edge] = []
 FACETS:list[Facet] = []
@@ -136,12 +138,13 @@ def get_edge_list() -> list[list[int]]:
     return [[e.vertex1.id, e.vertex2.id] for e in EDGES]
 def get_facet_list() -> list[list[int]]:
     """Get the list of facets as triplets of vertex IDs."""
-    return [[f.vertex1.id, f.vertex2.id, f.vertex3.id] for f in FACETS]
+    return [[f.vertex1.id-1, f.vertex2.id-1, f.vertex3.id-1] for f in FACETS]
 
 
 def create_vertices(vertex_list:list[list[float]]):
     """Create a list of Vertex objects from a list of coordinates and add it to VERTEXS."""
     for v in vertex_list:
+        # VERTEXS.append(Vertex(v))
         VERTEXS.append(Vertex(x=v[0], y=v[1], z=v[2]))
 
 
