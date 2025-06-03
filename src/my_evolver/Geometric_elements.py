@@ -34,13 +34,14 @@ class Edge:
 class Facet:
     _count:int = 0  # Class variable to keep track of the number of facets
     """A class representing a face in a 3D space, defined by three vertices."""
-    def __init__(self, vertex1:Vertex, vertex2:Vertex, vertex3:Vertex):
+    def __init__(self, vertex1:Vertex, vertex2:Vertex, vertex3:Vertex,face_id:int):
         assert vertex1.vertex_id != vertex2.vertex_id and vertex1.vertex_id != vertex3.vertex_id and vertex2.vertex_id != vertex3.vertex_id, "Vertices must be different"
         Facet._count += 1
         self.facet_id:int = Facet._count  # Unique ID for each facet 
         self.vertex1:Vertex = vertex1
         self.vertex2:Vertex = vertex2
         self.vertex3:Vertex = vertex3
+        self._face_id:int = face_id  # Placeholder for face ID, can be set later if needed
     @classmethod
     def from_edges(cls, edge1:Edge, edge2:Edge, edge3:Edge):
         """Create a Facet from three edges."""
@@ -96,7 +97,7 @@ class Face:
         """Triangulate the face by connecting each edge to the center point"""
         n = len(self.vertexs)
         if n == 3:
-            FACETS.append(Facet(self.vertexs[0], self.vertexs[1], self.vertexs[2]))  # Add triangle to the global list
+            FACETS.append(Facet(self.vertexs[0], self.vertexs[1], self.vertexs[2],self.face_id))  # Add triangle to the global list
             return
         center_x = sum(v.x for v in self.vertexs) / n
         center_y = sum(v.y for v in self.vertexs) / n
@@ -108,8 +109,8 @@ class Face:
             v1 = self.vertexs[i]
             v2 = self.vertexs[(i + 1) % n]
             EDGES.append(Edge(center_vertex,v1))
-            FACETS.append(Facet(center_vertex, v1, v2))
-    
+            FACETS.append(Facet(center_vertex, v1, v2,self.face_id))
+
 def faces_to_facets(faces:list[Face]):
     """Convert a list of Face objects to a list of Facet objects."""
     # print(len(VERTEXS))
@@ -122,14 +123,22 @@ def faces_to_facets(faces:list[Face]):
 class Body:
     _count:int = 0  # Class variable to keep track of the number of bodies
     """A class representing a 3D body composed of vertices, edges, and facets."""
-    def __init__(self):
+    def __init__(self,face_list:list[int] = []):
+        """Initialize a Body with an optional list of facets."""
         Body._count += 1
         self.bid:int = Body._count  # Unique ID for each body
-        self.facets:list[Facet] = []
-
+        self.face_list:list[int]= face_list  # List of facet IDs that belong to this body
+        self.directed_facets:list[int] = []
+    def __repr__(self):
+        return f"Body(id={self.bid}, facets={len(self.directed_facets)})"
+    
+    def add_facet_by_id(self,sign:int):
+        """Add a facet to the body by its ID."""
+        self.directed_facets.append(sign*Facet._count)  # Use the current count of facets to get the ID
 
 VERTEXS:list[Vertex] = []
 EDGES:list[Edge] = []
+FACES:list[Face] = []
 FACETS:list[Facet] = []
 BODIES:list[Body] = []
 
@@ -157,8 +166,6 @@ def create_edges(edge_list:list[list[int]]):
         EDGES.append(Edge(vertex1=VERTEXS[e[0]-1], vertex2=VERTEXS[e[1]-1]))
 
 def create_facets(face_list:list[list[int]]):
-    """Create a list of Face objects from a list of edge indices."""
-    faces:list[Face] = []
     for f in face_list:
         vertex_list = []
         for edge in f:
@@ -167,14 +174,24 @@ def create_facets(face_list:list[list[int]]):
             else:
                 vertex_list.append(EDGES[edge-1].vertex1)
         # Create face edges from the edge indices
-        faces.append(Face(vertexs=vertex_list))
-    faces_to_facets(faces)
+        f = Face(vertexs=vertex_list)
+        FACES.append(f)
+        for body in BODIES:
+            for fid in body.face_list:
+                if abs(fid) == f.face_id:
+                    body.add_facet_by_id(sign=1 if fid > 0 else -1)
+                    break
+        f.triangulation()
+    
+
+# def create_facets():
+
         # FACETS.extend(faces_to_facets(faces))  # Convert face to facets and add to FACETS
 
 def create_bodies(body_list:list[list[int]]):
     """Create a list of Body objects from a list of facet indices."""
     for b in body_list:
-        BODIES.append(Body())  # Initialize with empty faces
+        BODIES.append(Body(face_list=b))  # Initialize with empty faces
 
 def find_vertex_by_coordinates(x:float, y:float, z:float) -> Vertex:
     """Find a vertex by its coordinates."""

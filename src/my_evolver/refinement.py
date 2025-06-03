@@ -31,10 +31,10 @@ def single_facet_refinement(facet: Facet):
     get_or_create_edge(mid31, mid12)
 
     # Create new facets
-    FACETS.append(Facet(v1, mid12, mid31))
-    FACETS.append(Facet(mid12, v2, mid23))
-    FACETS.append(Facet(mid31, mid23, v3))
-    FACETS.append(Facet(mid12, mid23, mid31))
+    FACETS.append(Facet(v1, mid12, mid31,facet._face_id))
+    FACETS.append(Facet(mid12, v2, mid23,facet._face_id))
+    FACETS.append(Facet(mid31, mid23, v3,facet._face_id))
+    FACETS.append(Facet(mid12, mid23, mid31,facet._face_id))
 
 def refinement():
     n = len(FACETS)

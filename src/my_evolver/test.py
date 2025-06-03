@@ -26,7 +26,7 @@ face_list = [[1,10,-5,-9],
 
 body_list = [[1,2,3,4,5,6]]
 
-initialize(vertex_list, edge_list, face_list)
+initialize(vertex_list, edge_list, face_list,body_list)
 
 refinement()
 refinement()
@@ -143,6 +143,7 @@ for i in (pbar:=tqdm(range(500))):
 import polyscope as ps
 ps.init()
 ps.set_ground_plane_mode('none')
-ps.register_surface_mesh("Mesh_result",np.array(get_vertex_list()),np.array(get_facet_list()))
+# ps.register_surface_mesh("Mesh_init",np.array(get_vertex_list()),np.array(get_facet_list()))
 ps.register_surface_mesh("Mesh_result",Verts.detach().numpy(),Faces.numpy())
+# ps.register_surface_mesh("Mesh_init",np.array(get_vertex_list()),np.array(get_facet_list()))
 ps.show()
