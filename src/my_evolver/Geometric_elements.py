@@ -30,61 +30,6 @@ class Edge:
         return ((self.vertex1.x - self.vertex2.x) ** 2 + 
                 (self.vertex1.y - self.vertex2.y) ** 2 + 
                 (self.vertex1.z - self.vertex2.z) ** 2) ** 0.5
-    
-class Facet:
-    _count:int = 0  # Class variable to keep track of the number of facets
-    """A class representing a face in a 3D space, defined by three vertices."""
-    def __init__(self, vertex1:Vertex, vertex2:Vertex, vertex3:Vertex,face_id:int):
-        assert vertex1.vertex_id != vertex2.vertex_id and vertex1.vertex_id != vertex3.vertex_id and vertex2.vertex_id != vertex3.vertex_id, "Vertices must be different"
-        Facet._count += 1
-        self.facet_id:int = Facet._count  # Unique ID for each facet 
-        self.vertex1:Vertex = vertex1
-        self.vertex2:Vertex = vertex2
-        self.vertex3:Vertex = vertex3
-        self._face_id:int = face_id  # Placeholder for face ID, can be set later if needed
-    @classmethod
-    def from_edges(cls, edge1:Edge, edge2:Edge, edge3:Edge):
-        """Create a Facet from three edges."""
-        return cls(edge1.vertex1, edge2.vertex1, edge3.vertex1)
-    def __repr__(self):
-        return f"Face(vertex1={self.vertex1.vertex_id}, vertex2={self.vertex2.vertex_id}, vertex3={self.vertex3.vertex_id})"
-    def area(self)-> float:
-        """Calculate the area of the face using the cross product."""
-        v1 = (self.vertex2.x - self.vertex1.x, 
-               self.vertex2.y - self.vertex1.y, 
-               self.vertex2.z - self.vertex1.z)
-        v2 = (self.vertex3.x - self.vertex1.x, 
-               self.vertex3.y - self.vertex1.y, 
-               self.vertex3.z - self.vertex1.z)
-        cross_product = (v1[1] * v2[2] - v1[2] * v2[1],
-                         v1[2] * v2[0] - v1[0] * v2[2],
-                         v1[0] * v2[1] - v1[1] * v2[0])
-        return 0.5 * (cross_product[0]**2 + cross_product[1]**2 + cross_product[2]**2) ** 0.5
-    # def self_refinement(self):
-    #     """Refinement by creating new vertices at the midpoints of all edges and use these to 
-    #     subdivide each facet into four new facets each similar to the original."""
-    #     global VERTEXS, FACETS
-    #     # Ensure the global lists are accessible
-    #     v1 = self.vertex1
-    #     v2 = self.vertex2
-    #     v3 = self.vertex3
-        
-    #     # Calculate midpoints of edges
-    #     mid12 = Vertex((v1.x + v2.x) / 2, (v1.y + v2.y) / 2, (v1.z + v2.z) / 2)
-    #     mid23 = Vertex((v2.x + v3.x) / 2, (v2.y + v3.y) / 2, (v2.z + v3.z) / 2)
-    #     mid31 = Vertex((v3.x + v1.x) / 2, (v3.y + v1.y) / 2, (v3.z + v1.z) / 2)
-        
-    #     VERTEXS.append(mid12)
-    #     VERTEXS.append(mid23)   
-    #     VERTEXS.append(mid31)
-    #     # Create new facets
-    #     FACETS.append(Facet(v1, mid12, mid31))
-    #     FACETS.append(Facet(mid12, v2, mid23))
-    #     FACETS.append(Facet(mid31, mid23, v3))
-    #     FACETS.append(Facet(mid12, mid23, mid31))
-
-
-    
 
 class Face:
     _count:int = 0  # Class variable to keep track of the number of faces
@@ -111,6 +56,72 @@ class Face:
             EDGES.append(Edge(center_vertex,v1))
             FACETS.append(Facet(center_vertex, v1, v2,self.face_id))
 
+
+
+class Facet:
+    _count:int = 0  # Class variable to keep track of the number of facets
+    """A class representing a face in a 3D space, defined by three vertices."""
+    def __init__(self, vertex1:Vertex, vertex2:Vertex, vertex3:Vertex,face_id:int):
+        assert vertex1.vertex_id != vertex2.vertex_id and vertex1.vertex_id != vertex3.vertex_id and vertex2.vertex_id != vertex3.vertex_id, "Vertices must be different"
+        Facet._count += 1
+        self.facet_id:int = Facet._count  # Unique ID for each facet 
+        self.vertex1:Vertex = vertex1
+        self.vertex2:Vertex = vertex2
+        self.vertex3:Vertex = vertex3
+        self._face_id:int = face_id  # Placeholder for face ID, can be set later if needed
+        self.volume:float = self.compute_volume()  # Placeholder for volume, can be calculated later
+    @classmethod
+    def from_edges(cls, edge1:Edge, edge2:Edge, edge3:Edge):
+        """Create a Facet from three edges."""
+        return cls(edge1.vertex1, edge2.vertex1, edge3.vertex1)
+    def __repr__(self):
+        return f"Face(vertex1={self.vertex1.vertex_id}, vertex2={self.vertex2.vertex_id}, vertex3={self.vertex3.vertex_id})"
+    def area(self)-> float:
+        """Calculate the area of the face using the cross product."""
+        v1 = (self.vertex2.x - self.vertex1.x, 
+               self.vertex2.y - self.vertex1.y, 
+               self.vertex2.z - self.vertex1.z)
+        v2 = (self.vertex3.x - self.vertex1.x, 
+               self.vertex3.y - self.vertex1.y, 
+               self.vertex3.z - self.vertex1.z)
+        cross_product = (v1[1] * v2[2] - v1[2] * v2[1],
+                         v1[2] * v2[0] - v1[0] * v2[2],
+                         v1[0] * v2[1] - v1[1] * v2[0])
+        return 0.5 * (cross_product[0]**2 + cross_product[1]**2 + cross_product[2]**2) ** 0.5
+    
+    def compute_volume(self) -> float:
+        """Calculate the volume of the tetrahedron formed by this facet and the origin."""
+        v1, v2, v3 = self.vertex1, self.vertex2, self.vertex3
+        return abs((v1.x * (v2.y * v3.z - v3.y * v2.z) +
+                     v2.x * (v3.y * v1.z - v1.y * v3.z) +
+                     v3.x * (v1.y * v2.z - v2.y * v1.z)) / 6.0)
+    # def self_refinement(self):
+    #     """Refinement by creating new vertices at the midpoints of all edges and use these to 
+    #     subdivide each facet into four new facets each similar to the original."""
+    #     global VERTEXS, FACETS
+    #     # Ensure the global lists are accessible
+    #     v1 = self.vertex1
+    #     v2 = self.vertex2
+    #     v3 = self.vertex3
+        
+    #     # Calculate midpoints of edges
+    #     mid12 = Vertex((v1.x + v2.x) / 2, (v1.y + v2.y) / 2, (v1.z + v2.z) / 2)
+    #     mid23 = Vertex((v2.x + v3.x) / 2, (v2.y + v3.y) / 2, (v2.z + v3.z) / 2)
+    #     mid31 = Vertex((v3.x + v1.x) / 2, (v3.y + v1.y) / 2, (v3.z + v1.z) / 2)
+        
+    #     VERTEXS.append(mid12)
+    #     VERTEXS.append(mid23)   
+    #     VERTEXS.append(mid31)
+    #     # Create new facets
+    #     FACETS.append(Facet(v1, mid12, mid31))
+    #     FACETS.append(Facet(mid12, v2, mid23))
+    #     FACETS.append(Facet(mid31, mid23, v3))
+    #     FACETS.append(Facet(mid12, mid23, mid31))
+
+
+    
+
+
 def faces_to_facets(faces:list[Face]):
     """Convert a list of Face objects to a list of Facet objects."""
     # print(len(VERTEXS))
@@ -129,12 +140,32 @@ class Body:
         self.bid:int = Body._count  # Unique ID for each body
         self.face_list:list[int]= face_list  # List of facet IDs that belong to this body
         self.directed_facets:list[int] = []
+        self.volume:float=0.0
+
     def __repr__(self):
         return f"Body(id={self.bid}, facets={len(self.directed_facets)})"
     
     def add_facet_by_id(self,sign:int):
         """Add a facet to the body by its ID."""
-        self.directed_facets.append(sign*Facet._count)  # Use the current count of facets to get the ID
+        self.directed_facets.append(sign*Face._count)  # Use the current count of facets to get the ID
+    def compute_volume(self) -> float:
+        """Calculate the volume of the body using the divergence theorem."""
+        volume = 0.0
+        for facet in FACETS:
+            if facet._face_id in self.directed_facets:
+                volume += facet.volume
+            elif -facet._face_id in self.directed_facets:
+                volume -= facet.volume
+        self.volume = volume
+        return volume
+
+    def get_surface_area(self) -> float:
+        """Calculate the surface area of the body."""
+        surface_area = 0.0
+        for facet in FACETS:
+            if facet._face_id in self.directed_facets or -facet._face_id in self.directed_facets:
+                surface_area += facet.area()
+        return surface_area
 
 VERTEXS:list[Vertex] = []
 EDGES:list[Edge] = []
