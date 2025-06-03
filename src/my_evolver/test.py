@@ -24,10 +24,12 @@ face_list = [[1,10,-5,-9],
              [5,6,7,8],
              [-4,-3,-2,-1]]
 
+body_list = [[1,2,3,4,5,6]]
+
 initialize(vertex_list, edge_list, face_list)
 
 refinement()
-# refinement()
+refinement()
 
 
 import torch
@@ -115,7 +117,7 @@ lambda_=10.0
 M = compute_matrix(Verts, Faces, lambda_)
 solver = CholeskySolver(M@M)
 
-for i in (pbar:=tqdm(range(100))):
+for i in (pbar:=tqdm(range(500))):
     #Compute energy and volume gradients
     E_grad = torch.autograd.functional.jacobian(lambda x: compute_area_manifold(x,Faces),Verts)
     V_grad = - torch.autograd.functional.jacobian(lambda x: compute_volume_manifold(x,Faces),Verts)

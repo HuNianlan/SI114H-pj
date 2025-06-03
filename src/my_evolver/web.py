@@ -180,3 +180,12 @@
 #   };
 
 # extern struct webstruct web;
+
+class webstruct:
+    def __init__(self):
+        self.sdim = 3 #dimension of ambient space
+        self.total_area = 0.0 #Total area of the mesh
+        self.total_energy = 0.0
+        # ... and so on for the rest of the fields ...
+
+web:webstruct = webstruct()

@@ -1,39 +1,30 @@
-vertex_id = 0
-def get_next_vertex_id():
-    """Generate a unique vertex ID."""
-    global vertex_id
-    vertex_id += 1
-    return vertex_id
-
-edge_id = 0
-def get_next_edge_id():
-    """Generate a unique edge ID."""
-    global edge_id
-    edge_id += 1
-    return edge_id
-
-
 class Vertex:
     """A class representing a vertex in a 3D space with an ID, coordinates, and neighbors.
     Each vertex can have multiple neighbors, which are also vertices."""
+    _count:int = 0  # Class variable to keep track of the number of vertices
     def __init__(self, x, y,z):
-        self.id:int = get_next_vertex_id()
+        Vertex._count += 1
+        self.vertex_id:int = Vertex._count # Unique ID for each vertex
+        # self.id:int = get_next_vertex_id()
         self.x:float = x
         self.y:float = y
         self.z:float = z
     def __repr__(self):
-        return f"Vertex(id={self.id}, x={self.x}, y={self.y}, z={self.z})"                              
-    
+        return f"Vertex(id={self.vertex_id}, x={self.x}, y={self.y}, z={self.z})"
+
 
 class Edge:
+    _count:int = 0  # Class variable to keep track of the number of edges
     """A class representing an edge in a 3D space, defined by two vertices."""
     def __init__(self, vertex1:Vertex, vertex2:Vertex):
-        self.edge_id:int = get_next_edge_id()
-        assert vertex1.id != vertex2.id, "Vertices must be different"
+        Edge._count += 1
+        self.edge_id:int = Edge._count  # Unique ID for each edge
+        # self.edge_id:int = get_next_edge_id()
+        assert vertex1.vertex_id != vertex2.vertex_id, "Vertices must be different"
         self.vertex1:Vertex = vertex1
         self.vertex2:Vertex = vertex2
     def __repr__(self):
-        return f"Edge(vertex1={self.vertex1.id}, vertex2={self.vertex2.id})"
+        return f"Edge(vertex1={self.vertex1.vertex_id}, vertex2={self.vertex2.vertex_id})"
     def length(self):
         """Calculate the length of the edge."""
         return ((self.vertex1.x - self.vertex2.x) ** 2 + 
@@ -41,9 +32,12 @@ class Edge:
                 (self.vertex1.z - self.vertex2.z) ** 2) ** 0.5
     
 class Facet:
+    _count:int = 0  # Class variable to keep track of the number of facets
     """A class representing a face in a 3D space, defined by three vertices."""
     def __init__(self, vertex1:Vertex, vertex2:Vertex, vertex3:Vertex):
-        assert vertex1.id != vertex2.id and vertex1.id != vertex3.id and vertex2.id != vertex3.id, "Vertices must be different"
+        assert vertex1.vertex_id != vertex2.vertex_id and vertex1.vertex_id != vertex3.vertex_id and vertex2.vertex_id != vertex3.vertex_id, "Vertices must be different"
+        Facet._count += 1
+        self.facet_id:int = Facet._count  # Unique ID for each facet 
         self.vertex1:Vertex = vertex1
         self.vertex2:Vertex = vertex2
         self.vertex3:Vertex = vertex3
@@ -52,7 +46,7 @@ class Facet:
         """Create a Facet from three edges."""
         return cls(edge1.vertex1, edge2.vertex1, edge3.vertex1)
     def __repr__(self):
-        return f"Face(vertex1={self.vertex1.id}, vertex2={self.vertex2.id}, vertex3={self.vertex3.id})"
+        return f"Face(vertex1={self.vertex1.vertex_id}, vertex2={self.vertex2.vertex_id}, vertex3={self.vertex3.vertex_id})"
     def area(self)-> float:
         """Calculate the area of the face using the cross product."""
         v1 = (self.vertex2.x - self.vertex1.x, 
@@ -122,23 +116,29 @@ def faces_to_facets(faces:list[Face]):
         face.triangulation()
     # return facets
 
-
+class Body:
+    _count:int = 0  # Class variable to keep track of the number of bodies
+    """A class representing a 3D body composed of vertices, edges, and facets."""
+    def __init__(self):
+        Body._count += 1
+        self.bid:int = Body._count  # Unique ID for each body
+        self.facets:list[Facet] = []
 
 
 VERTEXS:list[Vertex] = []
 EDGES:list[Edge] = []
 FACETS:list[Facet] = []
-
+BODIES:list[Body] = []
 
 def get_vertex_list() -> list[list[float]]:
     """Get the coordinates of all vertices."""
     return [[v.x, v.y, v.z] for v in VERTEXS]
 def get_edge_list() -> list[list[int]]:
     """Get the list of edges as pairs of vertex IDs."""
-    return [[e.vertex1.id, e.vertex2.id] for e in EDGES]
+    return [[e.vertex1.vertex_id, e.vertex2.vertex_id] for e in EDGES]
 def get_facet_list() -> list[list[int]]:
     """Get the list of facets as triplets of vertex IDs."""
-    return [[f.vertex1.id-1, f.vertex2.id-1, f.vertex3.id-1] for f in FACETS]
+    return [[f.vertex1.vertex_id-1, f.vertex2.vertex_id-1, f.vertex3.vertex_id-1] for f in FACETS]
 
 
 def create_vertices(vertex_list:list[list[float]]):
@@ -168,6 +168,11 @@ def create_facets(face_list:list[list[int]]):
     faces_to_facets(faces)
         # FACETS.extend(faces_to_facets(faces))  # Convert face to facets and add to FACETS
 
+def create_bodies(body_list:list[list[int]]):
+    """Create a list of Body objects from a list of facet indices."""
+    for b in body_list:
+        BODIES.append(Body())  # Initialize with empty faces
+
 def find_vertex_by_coordinates(x:float, y:float, z:float) -> Vertex:
     """Find a vertex by its coordinates."""
     for v in VERTEXS:
@@ -178,6 +183,6 @@ def find_vertex_by_coordinates(x:float, y:float, z:float) -> Vertex:
 def find_edge_by_vertices(v1:Vertex, v2:Vertex) -> Edge:
     """Find an edge by its two vertices."""
     for e in EDGES:
-        if (e.vertex1.id == v1.id and e.vertex2.id == v2.id) or (e.vertex1.id == v2.id and e.vertex2.id == v1.id):
+        if (e.vertex1.vertex_id == v1.vertex_id and e.vertex2.vertex_id == v2.vertex_id) or (e.vertex1.vertex_id == v2.vertex_id and e.vertex2.vertex_id == v1.vertex_id):
             return e
     return None
