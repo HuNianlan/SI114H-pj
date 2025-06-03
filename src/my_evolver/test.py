@@ -4,6 +4,7 @@ from refinement import refinement
 from init import initialize
 import polyscope as ps
 from tqdm import tqdm
+from utils import get_para, get_body_para
 ########################################################################################################
 vertex_list = [[0.0,0.0,0.0],
                [1.0,0.0,0.0],
