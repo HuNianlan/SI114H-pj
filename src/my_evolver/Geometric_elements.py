@@ -86,8 +86,11 @@ class Facet:
     
 
 class Face:
+    _count:int = 0  # Class variable to keep track of the number of faces
     """A class representing a face in a 3D space"""
     def __init__(self, vertexs:list[Vertex]):
+        Face._count += 1
+        self.face_id:int = Face._count  # Unique ID for each face
         self.vertexs:list[Vertex] = vertexs
     def triangulation(self):
         """Triangulate the face by connecting each edge to the center point"""
