@@ -2,13 +2,16 @@ class Vertex:
     """A class representing a vertex in a 3D space with an ID, coordinates, and neighbors.
     Each vertex can have multiple neighbors, which are also vertices."""
     _count:int = 0  # Class variable to keep track of the number of vertices
-    def __init__(self, x, y,z):
+    def __init__(self, x, y,z,is_fixed:bool = False, boundary:bool = False):
         Vertex._count += 1
         self.vertex_id:int = Vertex._count # Unique ID for each vertex
         # self.id:int = get_next_vertex_id()
         self.x:float = x
         self.y:float = y
         self.z:float = z
+        self.is_fixed = is_fixed
+        self.boundary = boundary
+
     def __repr__(self):
         return f"Vertex(id={self.vertex_id}, x={self.x}, y={self.y}, z={self.z})"
 
@@ -134,13 +137,15 @@ def faces_to_facets(faces:list[Face]):
 class Body:
     _count:int = 0  # Class variable to keep track of the number of bodies
     """A class representing a 3D body composed of vertices, edges, and facets."""
-    def __init__(self,face_list:list[int] = []):
+    def __init__(self,face_list:list[int] = [],fixedvol:bool = False,volume:float = 0.0):
         """Initialize a Body with an optional list of facets."""
         Body._count += 1
         self.bid:int = Body._count  # Unique ID for each body
         self.face_list:list[int]= face_list  # List of facet IDs that belong to this body
         self.directed_facets:list[int] = []
-        self.volume:float=0.0
+        self.fixedvol:bool = fixedvol  # Whether the volume is fixed
+        self.old_volume:float = volume  # Store the old volume for reference
+        self.volume:float=volume
 
     def __repr__(self):
         return f"Body(id={self.bid}, facets={len(self.directed_facets)})"
