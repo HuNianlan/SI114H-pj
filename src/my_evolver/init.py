@@ -10,4 +10,7 @@ def initialize(vertex_list, edge_list, face_list,body_list=None):
     create_facets(face_list)  # Create faces from the face list
 
     get_para()  # Print the number of vertices, edges, and facets after initialization
-    get_body_para(1)  # Print the parameters of the first body if it exists
+    for i in range(len(body_list)):
+        get_body_para(i + 1)
+
+    

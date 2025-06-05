@@ -186,7 +186,7 @@ def get_facet_list() -> list[list[int]]:
 
 def create_vertices(vertex_list:list[list[float]]):
     """Create a list of Vertex objects from a list of coordinates and add it to VERTEXS."""
-    assert vertex_list[0].all()==0, "The first vertex must be at the origin (0, 0, 0)"
+    # assert vertex_list[0].all()==0, "The first vertex must be at the origin (0, 0, 0)"
     for v in vertex_list:
         # VERTEXS.append(Vertex(v))
         VERTEXS.append(Vertex(x=v[0], y=v[1], z=v[2]))
