@@ -9,7 +9,10 @@ class Energy:
     def compute_energy(self,Verts:torch.Tensor,Facets:torch.Tensor):
         # Placeholder for energy computation logic
         pass
-
+    def compute_and_store_gradient(self,Verts:torch.Tensor,Facets:torch.Tensor):
+        '''Compute the gradient of the energy with respect to the vertices.'''
+        # Placeholder for gradient computation logic
+        pass
 
 class Area(Energy):
     '''A class to compute the area energy of a global geometric body.'''

@@ -1,10 +1,11 @@
-from utils import get_facet_list1,get_vertex_list1
+from utils import get_facet_list1,get_vertex_list1,get_facet_list,get_vertex_list
 from refinement import refinement
 from init import initialize
 import polyscope as ps
 from tqdm import tqdm
-from energy import Area
-from constraint import Volume
+from energy import Area,Energy
+from constraint import Volume,Constraint
+from Geometric_Elements import update_vertex_coordinates
 ########################################################################################################
 vertex_list = [[0.0,0.0,0.0],
                [1.0,0.0,0.0],
@@ -29,13 +30,13 @@ body_list = [[1,2,3,4,5,6]]
 
 initialize(vertex_list, edge_list, face_list,body_list)
 
-refinement()
-refinement()
+# refinement()
+# refinement()
 
 
 import torch
 from torch.optim import Adam as AdamUniform
-from largesteps.solvers import CholeskySolver
+from largesteps.solvers import CholeskySolver, ConjugateGradientSolver
 
 
 
@@ -89,57 +90,68 @@ def laplacian_uniform(verts, faces):
     # correct diagonal
     return torch.sparse_coo_tensor(idx, values, (V,V)).coalesce()
 
-Verts:torch.Tensor = get_vertex_list1()
-Faces:torch.Tensor = get_facet_list1()
+# Verts:torch.Tensor = get_vertex_list1()
+# Faces:torch.Tensor = get_facet_list1()
 
-Verts.requires_grad = True 
+# Verts.requires_grad = True 
 energy = Area()
 constraint = Volume(1.0)
 
-print("Volume of the mesh:", constraint.compute_constraint(Verts, Faces).item())
-print("Area of the mesh:", energy.compute_energy(Verts, Faces).item())
+# print("Volume of the mesh:", constraint.compute_constraint(Verts, Faces).item())
+# print("Area of the mesh:", energy.compute_energy(Verts, Faces).item())
 ########################################################################################################
 
-with torch.no_grad():
-    Volume_target = constraint.compute_constraint(Verts,Faces)#Equal to initial volume
-    Area_now = energy.compute_energy(Verts,Faces)#Equal to initial area
-    assert Volume_target==1.0
-    assert Area_now==6.0
+# with torch.no_grad():
+#     Volume_target = constraint.compute_constraint(Verts,Faces)#Equal to initial volume
+#     Area_now = energy.compute_energy(Verts,Faces)#Equal to initial area
+#     assert Volume_target==1.0
+#     assert Area_now==6.0
 ########################################################################################################
 
 
-optimizer =AdamUniform([{'params': Verts,'lr':0.01}]) #Choice of gradient descent scheme
-lambda_=10.0
-M = compute_matrix(Verts, Faces, lambda_)
-solver = CholeskySolver(M@M)
 
-for i in (pbar:=tqdm(range(500))):
-    #Compute energy and volume gradients
-    E_grad = energy.compute_and_store_gradient(Verts,Faces)
-    V_grad = constraint.compute_and_store_gradient(Verts,Faces)
-    
-    P = torch.sum(torch.sum(V_grad*V_grad,dim=1))
-    Q = torch.sum(torch.sum(E_grad*V_grad,dim=1))
-    R = (Volume_target-constraint.compute_constraint(Verts,Faces)) #residual volume
-    F = Q/P
-    M = R/P
+# solver = ConjugateGradientSolver(M@M) #Use conjugate gradient solver if the matrix is too large
+def iterate(energy:Energy, constraint:Constraint, Verts:torch.Tensor=get_vertex_list1(), Faces:torch.Tensor=get_facet_list1(),num_iterations:int=10):
+    Verts.requires_grad = True
+    optimizer =AdamUniform([{'params': Verts,'lr':0.01}]) #Choice of gradient descent scheme
+    lambda_=10.0
+    M = compute_matrix(Verts, Faces, lambda_)
+    solver = CholeskySolver(M@M)
+    for i in (range(num_iterations)):
+        #Compute energy and volume gradients
+        E_grad = energy.compute_and_store_gradient(Verts,Faces)
+        V_grad = constraint.compute_and_store_gradient(Verts,Faces)
+        
+        P = torch.sum(torch.sum(V_grad*V_grad,dim=1))
+        Q = torch.sum(torch.sum(E_grad*V_grad,dim=1))
+        R = (constraint.target_value-constraint.compute_constraint(Verts,Faces)) #residual volume
+        F = Q/P
+        M = R/P
 
-    with torch.no_grad():
-        Verts += V_grad*M
+        with torch.no_grad():
+            Verts += V_grad*M
 
-    Verts.grad=E_grad-F*V_grad
-    Verts.grad = solver.solve(Verts.grad)
+        Verts.grad=E_grad-F*V_grad
+        Verts.grad = solver.solve(Verts.grad) # solver for linear system we can substitute with the cg solver
 
-    #Gradient descent step
-    optimizer.step() 
+        #Gradient descent step
+        optimizer.step() 
 
-
+    update_vertex_coordinates(Verts)
+# Verts:torch.Tensor = get_vertex_list1()
+# Faces:torch.Tensor = get_facet_list1()
+iterate(energy, constraint, get_vertex_list1(),get_facet_list1(), num_iterations=10)
+refinement()
+iterate(energy, constraint, get_vertex_list1(),get_facet_list1(), num_iterations=100)
+# refinement()    
+# iterate(energy, constraint, Verts, Faces, num_iterations=10)
 
 ########################################################################################################
 import polyscope as ps
+import numpy as np
 ps.init()
 ps.set_ground_plane_mode('none')
-# ps.register_surface_mesh("Mesh_init",np.array(get_vertex_list()),np.array(get_facet_list()))
-ps.register_surface_mesh("Mesh_result",Verts.detach().numpy(),Faces.numpy())
+ps.register_surface_mesh("Mesh_result",np.array(get_vertex_list()),np.array(get_facet_list()))
+# ps.register_surface_mesh("Mesh_result",Verts.detach().numpy(),Faces.numpy())
 # ps.register_surface_mesh("Mesh_init",np.array(get_vertex_list()),np.array(get_facet_list()))
 ps.show()

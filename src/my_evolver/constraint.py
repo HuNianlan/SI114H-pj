@@ -1,19 +1,23 @@
 import torch
 class Constraint:
     '''A class to represent a constraint on the geometric body.'''
-    def __init__(self, name: str):
+    def __init__(self, name: str,target_value: float = 0.0):
         self.name: str = name
         self.c_grad: torch.Tensor = None
+        self.target_value: float = target_value  # Target value for the constraint
+
     def compute_constraint(self, Verts: torch.Tensor, Facets: torch.Tensor):
         # Placeholder for constraint computation logic
         pass
-
+    def compute_and_store_gradient(self, Verts: torch.Tensor, Facets: torch.Tensor):
+        '''Compute the gradient of the constraint with respect to the vertices.'''
+        # Placeholder for gradient computation logic
+        pass
 
 class Volume(Constraint):
     '''A class to compute the volume constraint of a global geometric body.'''
     def __init__(self,target_volume: float = 0.0):
-        self.target_volume = target_volume  # Target volume for the constraint
-        super().__init__('volume')
+        super().__init__('volume', target_value=target_volume)
 
     def compute_constraint(self, Verts: torch.Tensor, Facets: torch.Tensor, Signs: torch.Tensor=None):
         '''Compute the oriented volume constraint of the body.'''

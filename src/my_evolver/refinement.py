@@ -1,7 +1,6 @@
 from Geometric_Elements import Vertex, Facet, Edge, find_vertex_by_coordinates, find_edge_by_vertices,update_facet_of_body
-from Geometric_Elements import VERTEXS, FACETS, EDGES,BODIES
 from utils import get_para
-import utils
+import global_state
 # from utils import edge_diff, facet_diff
 
 def get_or_create_midpoint(v1, v2):
@@ -9,12 +8,12 @@ def get_or_create_midpoint(v1, v2):
     mid = find_vertex_by_coordinates(x, y, z)
     if mid is None:
         mid = Vertex(x, y, z)
-        VERTEXS.append(mid)
+        global_state.VERTEXS.append(mid)
     return mid
 
 def get_or_create_edge(v1, v2):
     if find_edge_by_vertices(v1, v2) is None:
-        EDGES.append(Edge(v1, v2))
+        global_state.EDGES.append(Edge(v1, v2))
 
 def single_facet_refinement(facet: Facet):
     v1, v2, v3 = facet.vertex1, facet.vertex2, facet.vertex3
@@ -33,25 +32,25 @@ def single_facet_refinement(facet: Facet):
     get_or_create_edge(mid31, mid12)
 
     # Create new facets
-    FACETS.append(Facet(v1, mid12, mid31,facet._face_id))
-    FACETS.append(Facet(mid12, v2, mid23,facet._face_id))
-    FACETS.append(Facet(mid31, mid23, v3,facet._face_id))
-    FACETS.append(Facet(mid12, mid23, mid31,facet._face_id))
+    global_state.FACETS.append(Facet(v1, mid12, mid31,facet._face_id))
+    global_state.FACETS.append(Facet(mid12, v2, mid23,facet._face_id))
+    global_state.FACETS.append(Facet(mid31, mid23, v3,facet._face_id))
+    global_state.FACETS.append(Facet(mid12, mid23, mid31,facet._face_id))
 
 def refinement():
-    n = len(FACETS)
-    m = len(EDGES)
+    n = len(global_state.FACETS)
+    m = len(global_state.EDGES)
 
     # Copy of the original facets to avoid modifying while iterating
-    original_facets = FACETS[:n]
+    original_facets = global_state.FACETS[:n]
 
     for facet in original_facets:
         single_facet_refinement(facet)
 
-    del FACETS[:n]  # Remove original facets
-    del EDGES[:m]   # Remove old edges
-    utils.facet_diff += n
-    utils.edge_diff += m
+    del global_state.FACETS[:n]  # Remove original facets
+    del global_state.EDGES[:m]   # Remove old edges
+    global_state.facet_diff += n
+    global_state.edge_diff += m
 
     update_facet_of_body()
     get_para()  # Print info
