@@ -98,10 +98,15 @@ constraint = Volume(1.0)
 
 print("Volume of the mesh:", constraint.compute_constraint(Verts, Faces).item())
 print("Area of the mesh:", energy.compute_energy(Verts, Faces).item())
+########################################################################################################
 
 with torch.no_grad():
     Volume_target = constraint.compute_constraint(Verts,Faces)#Equal to initial volume
+    Area_now = energy.compute_energy(Verts,Faces)#Equal to initial area
     assert Volume_target==1.0
+    assert Area_now==6.0
+########################################################################################################
+
 
 optimizer =AdamUniform([{'params': Verts,'lr':0.01}]) #Choice of gradient descent scheme
 lambda_=10.0
@@ -126,7 +131,6 @@ for i in (pbar:=tqdm(range(500))):
     Verts.grad = solver.solve(Verts.grad)
 
     #Gradient descent step
-    # pbar.set_description("Area:"+str([energy.compute_energy(Verts,Faces).item()])+"  Volume:"+str(compute_volume_manifold(Verts,Faces).item()))
     optimizer.step() 
 
 

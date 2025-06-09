@@ -17,6 +17,7 @@ class Volume(Constraint):
 
     def compute_constraint(self, Verts: torch.Tensor, Facets: torch.Tensor, Signs: torch.Tensor=None):
         '''Compute the oriented volume constraint of the body.'''
+        # print(Facets.shape)
         Coords = Verts[Facets]           # [F, 3, 3]
         v0, v1, v2 = Coords[:, 0], Coords[:, 1], Coords[:, 2]
         volume_per_face = torch.sum(v0 * torch.cross(v1, v2, dim=1), dim=1)  # [F]

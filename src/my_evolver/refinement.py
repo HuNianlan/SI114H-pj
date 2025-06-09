@@ -1,6 +1,8 @@
-from Geometric_Elements import Vertex, Facet, Edge, find_vertex_by_coordinates, find_edge_by_vertices
-from Geometric_Elements import VERTEXS, FACETS, EDGES
+from Geometric_Elements import Vertex, Facet, Edge, find_vertex_by_coordinates, find_edge_by_vertices,update_facet_of_body
+from Geometric_Elements import VERTEXS, FACETS, EDGES,BODIES
 from utils import get_para
+import utils
+# from utils import edge_diff, facet_diff
 
 def get_or_create_midpoint(v1, v2):
     x, y, z = (v1.x + v2.x) / 2, (v1.y + v2.y) / 2, (v1.z + v2.z) / 2
@@ -48,5 +50,8 @@ def refinement():
 
     del FACETS[:n]  # Remove original facets
     del EDGES[:m]   # Remove old edges
+    utils.facet_diff += n
+    utils.edge_diff += m
 
+    update_facet_of_body()
     get_para()  # Print info

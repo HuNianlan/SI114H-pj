@@ -74,6 +74,7 @@ class Facet:
         self.vertex1:Vertex = vertex1
         self.vertex2:Vertex = vertex2
         self.vertex3:Vertex = vertex3
+        self.vertex_idx:list[int] = [vertex1.vertex_id-1, vertex2.vertex_id-1, vertex3.vertex_id-1]  # List of vertex IDs
         self._face_id:int = face_id  # Placeholder for face ID, can be set later if needed
         self.volume:float = self.compute_volume()  # Placeholder for volume, can be calculated later
     @classmethod
@@ -119,36 +120,86 @@ class Body:
         """Initialize a Body with an optional list of facets."""
         Body._count += 1
         self.bid:int = Body._count  # Unique ID for each body
-        self.face_list:list[int]= face_list  # List of facet IDs that belong to this body
-        self.directed_facets:list[int] = []
+        self.directed_face_list:list[int]= face_list  # List of facet IDs that belong to this body
+        self.faces:list[int] = []
+        self.facets:list[int] = []  # List to store the IDs of the facets in this body
+        self.face_sign:list[int] = []
+        self.facet_sign:list[int] = []  # List to store the signs of the facets
         self.fixedvol:bool = fixedvol  # Whether the volume is fixed
         self.old_volume:float = volume  # Store the old volume for reference
         self.volume:float=volume
 
     def __repr__(self):
-        return f"Body(id={self.bid}, facets={len(self.directed_facets)})"
-    
+        return f"Body(id={self.bid}, facets={len(self.facets)})"
+
     def add_facet_by_id(self,sign:int):
         """Add a facet to the body by its ID."""
-        self.directed_facets.append(sign*Face._count)  # Use the current count of facets to get the ID
+        self.face_sign.append(sign)  # Store the sign of the facet
+        self.faces.append(Face._count)  # Use the current count of facets to get the ID
+
+
     def compute_volume(self) -> float:
         """Calculate the volume of the body using the divergence theorem."""
         volume = 0.0
         for facet in FACETS:
-            if facet._face_id in self.directed_facets:
-                volume += facet.volume
-            elif -facet._face_id in self.directed_facets:
-                volume -= facet.volume
+            if facet._face_id in self.faces:
+                ind = self.faces.index(facet._face_id)
+                sign = self.face_sign[ind]
+                volume += sign * facet.volume
         self.volume = volume
         return volume
+
 
     def get_surface_area(self) -> float:
         """Calculate the surface area of the body."""
         surface_area = 0.0
         for facet in FACETS:
-            if facet._face_id in self.directed_facets or -facet._face_id in self.directed_facets:
+            if facet._face_id in self.faces:
                 surface_area += facet.area()
         return surface_area
+
+    def update_facet_list(self):
+        """Update the list of facets in the body based on the current FACETS."""
+        self.facets = [f.facet_id for f in FACETS if f._face_id in self.faces]
+
+    def update_facet_sign(self):
+        """Get the signs of the facets in the body."""
+        sign = []
+        for f in FACETS:
+            if f._face_id in self.faces:
+                ind = self.faces.index(f._face_id)
+                sign.append(self.face_sign[ind])
+        self.facet_sign = sign
+
+    # def get_facet_list(self)->torch.Tensor:
+    #     """Get the list of facets as a tensor of vertex coordinates."""
+    #     # return torch.tensor([[FACES[f-1].vertex1.vertex_id-1, FACES[f-1].vertex2.vertex_id-1, FACES[f-1].vertex3.vertex_id-1] for f in self.facets], dtype=torch.int64)
+    #     val = torch.tensor(
+    #         [FACETS[f - 1].vertex_idx for f in self.facets],
+    #         dtype=torch.int64
+    #     )
+    #     print(val.shape)
+    #     return val
+    def get_facet_list(self):
+        return self.facets
+    
+    def get_facet_sign(self) -> torch.Tensor:
+        return torch.tensor(self.facet_sign, dtype=torch.int8)
+    
+
+def update_facet_of_body():
+    """Update the facets of each body based on the current FACETS."""
+    for body in BODIES:
+        body.update_facet_list()  # Update the list of facets in the body
+        body.update_facet_sign()  # Update the signs of the facets in the body
+        # body.faces = []
+        # body.face_sign = []
+        # for f in FACETS:
+        #     if f._face_id in body.directed_face_list:
+        #         body.add_facet_by_id(sign=1 if f._face_id > 0 else -1)
+        # body.update_facet_sign()  # Update the facet signs after adding all facets
+# def create_facets():
+
 
 VERTEXS:list[Vertex] = []
 EDGES:list[Edge] = []
@@ -182,14 +233,13 @@ def create_facets(face_list:list[list[int]]):
         f = Face(vertexs=vertex_list)
         FACES.append(f)
         for body in BODIES:
-            for fid in body.face_list:
+            for fid in body.directed_face_list:
                 if abs(fid) == f.face_id:
                     body.add_facet_by_id(sign=1 if fid > 0 else -1)
                     break
         f.triangulation()
     
 
-# def create_facets():
 
         # FACETS.extend(faces_to_facets(faces))  # Convert face to facets and add to FACETS
 

@@ -2,7 +2,8 @@ from Geometric_Elements import FACETS,EDGES,VERTEXS,BODIES
 from Geometric_Elements import Body
 
 import torch
-
+edge_diff = 1
+facet_diff = 1
 def get_vertex_list() -> list[list[float]]:
     """Get the coordinates of all vertices."""
     return [[v.x, v.y, v.z] for v in VERTEXS]
@@ -30,3 +31,4 @@ def get_para():
 def get_body_para(bid):
     body:Body = BODIES[bid-1]
     print(f"body {bid}: volume:{body.compute_volume()}, area:{body.get_surface_area()}")
+
