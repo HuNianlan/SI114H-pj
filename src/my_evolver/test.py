@@ -1,10 +1,10 @@
-from Geometric_Elements import get_facet_list,get_vertex_list
-import numpy as np
+from utils import get_facet_list1,get_vertex_list1
 from refinement import refinement
 from init import initialize
 import polyscope as ps
 from tqdm import tqdm
-from utils import get_para, get_body_para
+from energy import Area
+from constraint import Volume
 ########################################################################################################
 vertex_list = [[0.0,0.0,0.0],
                [1.0,0.0,0.0],
@@ -37,19 +37,6 @@ import torch
 from torch.optim import Adam as AdamUniform
 from largesteps.solvers import CholeskySolver
 
-def compute_volume_manifold(Verts,Faces):
-    Coords = Verts[Faces]
-    cross_prods = torch.cross(Coords[:,1],Coords[:,2],dim=1)
-    determinants = torch.sum(cross_prods*Coords[:,0],dim=1)
-    Vol = torch.sum(determinants)/6
-    return(Vol)
-
-
-def compute_area_manifold(Verts,Faces):
-    Coords = Verts[Faces]
-    cross_prods = torch.cross(Coords[:,1]-Coords[:,0],Coords[:,2]-Coords[:,0],dim=1)
-    Areas =  0.5*torch.norm(cross_prods,dim=1)
-    return(torch.sum(Areas))
 
 
 def compute_matrix(verts, faces, lambda_):
@@ -102,16 +89,19 @@ def laplacian_uniform(verts, faces):
     # correct diagonal
     return torch.sparse_coo_tensor(idx, values, (V,V)).coalesce()
 
+Verts:torch.Tensor = get_vertex_list1()
+Faces:torch.Tensor = get_facet_list1()
 
-
-Verts = torch.tensor(get_vertex_list(), dtype=torch.float32)
-Faces = torch.tensor(get_facet_list(), dtype=torch.int64)
 Verts.requires_grad = True 
-print("Volume of the mesh:", compute_volume_manifold(Verts, Faces).item())
-print("Area of the mesh:", compute_area_manifold(Verts, Faces).item())
+energy = Area()
+constraint = Volume(1.0)
+
+print("Volume of the mesh:", constraint.compute_constraint(Verts, Faces).item())
+print("Area of the mesh:", energy.compute_energy(Verts, Faces).item())
 
 with torch.no_grad():
-    Volume_target = compute_volume_manifold(Verts,Faces)#Equal to initial volume
+    Volume_target = constraint.compute_constraint(Verts,Faces)#Equal to initial volume
+    assert Volume_target==1.0
 
 optimizer =AdamUniform([{'params': Verts,'lr':0.01}]) #Choice of gradient descent scheme
 lambda_=10.0
@@ -120,22 +110,23 @@ solver = CholeskySolver(M@M)
 
 for i in (pbar:=tqdm(range(500))):
     #Compute energy and volume gradients
-    E_grad = torch.autograd.functional.jacobian(lambda x: compute_area_manifold(x,Faces),Verts)
-    V_grad = - torch.autograd.functional.jacobian(lambda x: compute_volume_manifold(x,Faces),Verts)
+    E_grad = energy.compute_and_store_gradient(Verts,Faces)
+    V_grad = constraint.compute_and_store_gradient(Verts,Faces)
+    
     P = torch.sum(torch.sum(V_grad*V_grad,dim=1))
     Q = torch.sum(torch.sum(E_grad*V_grad,dim=1))
-    R = (Volume_target-compute_volume_manifold(Verts,Faces))
+    R = (Volume_target-constraint.compute_constraint(Verts,Faces)) #residual volume
     F = Q/P
     M = R/P
 
     with torch.no_grad():
-        Verts-= V_grad*M
+        Verts += V_grad*M
 
     Verts.grad=E_grad-F*V_grad
     Verts.grad = solver.solve(Verts.grad)
 
     #Gradient descent step
-    pbar.set_description("Area:"+str([compute_area_manifold(Verts,Faces).item()])+"  Volume:"+str(compute_volume_manifold(Verts,Faces).item()))
+    # pbar.set_description("Area:"+str([energy.compute_energy(Verts,Faces).item()])+"  Volume:"+str(compute_volume_manifold(Verts,Faces).item()))
     optimizer.step() 
 
 

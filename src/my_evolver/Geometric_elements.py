@@ -1,3 +1,4 @@
+import torch
 class Vertex:
     """A class representing a vertex in a 3D space with an ID, coordinates, and neighbors.
     Each vertex can have multiple neighbors, which are also vertices."""
@@ -5,12 +6,14 @@ class Vertex:
     def __init__(self, x, y,z,is_fixed:bool = False, boundary:bool = False):
         Vertex._count += 1
         self.vertex_id:int = Vertex._count # Unique ID for each vertex
-        # self.id:int = get_next_vertex_id()
         self.x:float = x
         self.y:float = y
         self.z:float = z
+        self.coord = torch.tensor([x, y, z], dtype=torch.float32)  # Coordinates as a tensor
         self.is_fixed = is_fixed
         self.boundary = boundary
+        # self.E_grad:torch.Tensor = torch.tensor([0.0, 0.0, 0.0], dtype=torch.float32)  # Gradient placeholder
+        # self.vgrad:torch.Tensor = torch.tensor([0.0, 0.0, 0.0], dtype=torch.float32)  # Volume gradient placeholder
 
     def __repr__(self):
         return f"Vertex(id={self.vertex_id}, x={self.x}, y={self.y}, z={self.z})"
@@ -98,28 +101,6 @@ class Facet:
         return abs((v1.x * (v2.y * v3.z - v3.y * v2.z) +
                      v2.x * (v3.y * v1.z - v1.y * v3.z) +
                      v3.x * (v1.y * v2.z - v2.y * v1.z)) / 6.0)
-    # def self_refinement(self):
-    #     """Refinement by creating new vertices at the midpoints of all edges and use these to 
-    #     subdivide each facet into four new facets each similar to the original."""
-    #     global VERTEXS, FACETS
-    #     # Ensure the global lists are accessible
-    #     v1 = self.vertex1
-    #     v2 = self.vertex2
-    #     v3 = self.vertex3
-        
-    #     # Calculate midpoints of edges
-    #     mid12 = Vertex((v1.x + v2.x) / 2, (v1.y + v2.y) / 2, (v1.z + v2.z) / 2)
-    #     mid23 = Vertex((v2.x + v3.x) / 2, (v2.y + v3.y) / 2, (v2.z + v3.z) / 2)
-    #     mid31 = Vertex((v3.x + v1.x) / 2, (v3.y + v1.y) / 2, (v3.z + v1.z) / 2)
-        
-    #     VERTEXS.append(mid12)
-    #     VERTEXS.append(mid23)   
-    #     VERTEXS.append(mid31)
-    #     # Create new facets
-    #     FACETS.append(Facet(v1, mid12, mid31))
-    #     FACETS.append(Facet(mid12, v2, mid23))
-    #     FACETS.append(Facet(mid31, mid23, v3))
-    #     FACETS.append(Facet(mid12, mid23, mid31))
 
 
     
@@ -127,12 +108,9 @@ class Facet:
 
 def faces_to_facets(faces:list[Face]):
     """Convert a list of Face objects to a list of Facet objects."""
-    # print(len(VERTEXS))
-    # print(len(EDGES))
-    # print(len(FACETS))
     for face in faces:
         face.triangulation()
-    # return facets
+
 
 class Body:
     _count:int = 0  # Class variable to keep track of the number of bodies
@@ -177,16 +155,6 @@ EDGES:list[Edge] = []
 FACES:list[Face] = []
 FACETS:list[Facet] = []
 BODIES:list[Body] = []
-
-def get_vertex_list() -> list[list[float]]:
-    """Get the coordinates of all vertices."""
-    return [[v.x, v.y, v.z] for v in VERTEXS]
-def get_edge_list() -> list[list[int]]:
-    """Get the list of edges as pairs of vertex IDs."""
-    return [[e.vertex1.vertex_id, e.vertex2.vertex_id] for e in EDGES]
-def get_facet_list() -> list[list[int]]:
-    """Get the list of facets as triplets of vertex IDs."""
-    return [[f.vertex1.vertex_id-1, f.vertex2.vertex_id-1, f.vertex3.vertex_id-1] for f in FACETS]
 
 
 def create_vertices(vertex_list:list[list[float]]):
