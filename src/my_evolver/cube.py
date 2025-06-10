@@ -1,9 +1,7 @@
-from utils import get_facet_list1,get_vertex_list1,get_facet_list,get_vertex_list,get_body_list1
+from utils import get_facet_list1,get_vertex_list1,get_facet_list,get_vertex_list
 from refinement import refinement
 from init import initialize
 import polyscope as ps
-from energy import Area
-from constraint import Volume
 from iterate import iterate
 ########################################################################################################
 vertex_list = [[0.0,0.0,0.0],
@@ -29,11 +27,6 @@ body_list = [[1,2,3,4,5,6]]
 volume_constraint = [1.0]
 ########################################################################################################
 initialize(vertex_list, edge_list, face_list,body_list,volume_constraint)
-# energy = Area()
-# constraint = Volume(1.0)
-# global_state.BODIES[0].add_constraints(constraint)
-
-# solver = ConjugateGradientSolver(M@M) #Use conjugate gradient solver if the matrix is too large
 
 for i in range(3):
     iterate(get_vertex_list1(),get_facet_list1(), num_iterations=500)

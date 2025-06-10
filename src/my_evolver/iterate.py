@@ -109,40 +109,28 @@ def iterate(Verts:torch.Tensor=get_vertex_list1(), Faces:torch.Tensor=get_facet_
     for _ in (range(num_iterations)):
         #Compute energy and volume gradients
         E_grad = energy.compute_and_store_gradient(Verts,Faces)
-
-
-        # V_grad = constraint.compute_and_store_gradient(Verts,Faces)
         V_grad = torch.empty((len(global_state.BODIES),len(Verts),3)) # 如果每个body只有一个constrains，后面要改
         target_val = torch.empty(len(global_state.BODIES))
         real_val = torch.empty(len(global_state.BODIES))
+        
         for idx,b in enumerate(global_state.BODIES):
             for cons in b.constraints:
-                # v_grad = cons.compute_and_store_gradient(Verts,Faces[np.array(b.get_facet_list())-global_state.facet_diff])
                 b_f = Faces[np.array(b.get_facet_list())-global_state.facet_diff]
                 v_grad = cons.compute_and_store_gradient(Verts,b_f,Signs = b.get_facet_sign())
                 V_grad[idx]= -v_grad
                 target_val[idx]=cons.target_value
                 real_val[idx] = cons.compute_constraint(Verts,b_f,Signs = b.get_facet_sign())
-            # V_grad = torch.stack(V_grad,v_grad)
 
-        # V_grad.squeeze(0)
-        # P = torch.sum(torch.sum(V_grad*V_grad,dim=1))
-        # Q = torch.sum(torch.sum(E_grad*V_grad,dim=1))
         P = torch.sum(torch.sum((V_grad*V_grad.unsqueeze(1)),dim=3),dim=2)
         Q = torch.sum(torch.sum(E_grad*V_grad,dim=2),dim=1)
         
         R = (target_val-real_val) #residual volume
-        # F = Q/P
-        # M = R/P
         F = torch.linalg.solve(P,Q)
         M = torch.linalg.solve(P,R)
-        # V_grad = V_grad.unsqueeze(0)
+
         with torch.no_grad():
-            # Verts += V_grad*M
             Verts -= torch.sum(((V_grad.transpose(0,2))*M).transpose(0,2),dim=0)
 
-
-        # Verts.grad=E_grad-F*V_grad
         Verts.grad=E_grad-torch.sum(((V_grad.transpose(0,2))*F).transpose(0,2),dim=0)
 
         Verts.grad = solver.solve(Verts.grad) # solver for linear system we can substitute with the cg solver
