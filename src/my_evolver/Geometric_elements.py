@@ -113,6 +113,7 @@ def faces_to_facets(faces:list[Face]):
     for face in faces:
         face.triangulation()
 
+from constraint import Constraint
 
 class Body:
     _count:int = 0  # Class variable to keep track of the number of bodies
@@ -129,6 +130,7 @@ class Body:
         self.fixedvol:bool = fixedvol  # Whether the volume is fixed
         self.old_volume:float = volume  # Store the old volume for reference
         self.volume:float=volume
+        self.constraints:list[Constraint] = []
 
     def __repr__(self):
         return f"Body(id={self.bid}, facets={len(self.facets)})"
@@ -138,6 +140,8 @@ class Body:
         self.face_sign.append(sign)  # Store the sign of the facet
         self.faces.append(Face._count)  # Use the current count of facets to get the ID
 
+    def add_constraints(self,constraint:Constraint):
+        self.constraints.append(constraint)
 
     def compute_volume(self) -> float:
         """Calculate the volume of the body using the divergence theorem."""
@@ -172,15 +176,6 @@ class Body:
                 sign.append(self.face_sign[ind])
         self.facet_sign = sign
 
-    # def get_facet_list(self)->torch.Tensor:
-    #     """Get the list of facets as a tensor of vertex coordinates."""
-    #     # return torch.tensor([[FACES[f-1].vertex1.vertex_id-1, FACES[f-1].vertex2.vertex_id-1, FACES[f-1].vertex3.vertex_id-1] for f in self.facets], dtype=torch.int64)
-    #     val = torch.tensor(
-    #         [FACETS[f - 1].vertex_idx for f in self.facets],
-    #         dtype=torch.int64
-    #     )
-    #     print(val.shape)
-    #     return val
     def get_facet_list(self):
         return self.facets
     
@@ -193,20 +188,6 @@ def update_facet_of_body():
     for body in global_state.BODIES:
         body.update_facet_list()  # Update the list of facets in the body
         body.update_facet_sign()  # Update the signs of the facets in the body
-        # body.faces = []
-        # body.face_sign = []
-        # for f in FACETS:
-        #     if f._face_id in body.directed_face_list:
-        #         body.add_facet_by_id(sign=1 if f._face_id > 0 else -1)
-        # body.update_facet_sign()  # Update the facet signs after adding all facets
-# def create_facets():
-
-
-# VERTEXS:list[Vertex] = []
-# EDGES:list[Edge] = []
-# FACES:list[Face] = []
-# FACETS:list[Facet] = []
-# BODIES:list[Body] = []
 
 
 
@@ -244,11 +225,16 @@ def create_facets(face_list:list[list[int]]):
 
 
         # FACETS.extend(faces_to_facets(faces))  # Convert face to facets and add to FACETS
+from constraint import Volume
 
-def create_bodies(body_list:list[list[int]]):
+
+def create_bodies(body_list:list[list[int]],volume_constraint):
     """Create a list of Body objects from a list of facet indices."""
     for b in body_list:
         global_state.BODIES.append(Body(face_list=b))  # Initialize with empty faces
+    for body,v_cons in zip(global_state.BODIES,volume_constraint):
+        if v_cons is not None:
+            body.add_constraints(Volume(float(v_cons)))
 
 def find_vertex_by_coordinates(x:float, y:float, z:float) -> Vertex:
     """Find a vertex by its coordinates."""
