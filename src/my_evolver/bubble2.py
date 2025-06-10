@@ -5,7 +5,7 @@ from init import initialize
 import polyscope as ps
 from tqdm import tqdm
 import utils
-from Geometric_Elements import BODIES
+import global_state
 # 顶点列表：每个点由三个坐标值 (x, y, z) 表示
 vertices = [
     [0.0, 0.0, 0.0],  # 1
@@ -76,7 +76,7 @@ import numpy as np
 from constraint import Volume
 
 constraint = Volume(1)
-vol = constraint.compute_constraint(Verts, Faces[np.array(BODIES[1].get_facet_list())-utils.facet_diff],Signs = BODIES[1].get_facet_sign())
+vol = constraint.compute_constraint(Verts, Faces[np.array(global_state.BODIES[1].get_facet_list())-global_state.facet_diff],Signs = global_state.BODIES[1].get_facet_sign())
 assert vol == 1
 # import torch
 # import numpy as np
@@ -84,55 +84,6 @@ assert vol == 1
 # from largesteps.solvers import CholeskySolver
 # from largesteps.optimize import AdamUniform
 
-# def laplacian_uniform(verts, faces):
-#     """
-#     Compute the uniform laplacian
-#     Parameters
-#     ----------
-#     verts : torch.Tensor
-#         Vertex positions.
-#     faces : torch.Tensor
-#         array of triangle faces.
-#     """
-#     V = verts.shape[0]
-#     F = faces.shape[0]
-
-#     # Neighbor indices
-#     ii = faces[:, [1, 2, 0]].flatten()
-#     jj = faces[:, [2, 0, 1]].flatten()
-#     adj = torch.stack([torch.cat([ii, jj]), torch.cat([jj, ii])], dim=0).unique(dim=1)
-#     adj_values = torch.ones(adj.shape[1], device=verts.device, dtype=torch.float)
-
-#     # Diagonal indices
-#     diag_idx = adj[0]
-
-#     # Build the sparse matrix
-#     idx = torch.cat((adj, torch.stack((diag_idx, diag_idx), dim=0)), dim=1)
-#     values = torch.cat((-adj_values, adj_values))
-
-#     # The coalesce operation sums the duplicate indices, resulting in the
-#     # correct diagonal
-#     return torch.sparse_coo_tensor(idx, values, (V,V)).coalesce()
-
-# def compute_matrix(verts, faces, lambda_):
-#     """
-#     Build the parameterization matrix.
-#     Parameters
-#     ----------
-#     verts : torch.Tensor
-#         Vertex positions
-#     faces : torch.Tensor
-#         Triangle faces
-#     lambda_ : float
-#         Hyperparameter lambda of our method, used to compute the
-#         parameterization matrix as (I + lambda_ * L)
-#     """
-#     L = laplacian_uniform(verts, faces)
-
-#     idx = torch.arange(verts.shape[0], dtype=torch.long, device=verts.device)
-#     eye = torch.sparse_coo_tensor(torch.stack((idx, idx), dim=0), torch.ones(verts.shape[0], dtype=torch.float, device=verts.device), (verts.shape[0], verts.shape[0]))
-#     M = torch.add(eye, lambda_*L) # M = I + lambda_ * L
-#     return M.coalesce()
 
 # # We provide routines to compute surface energy and volume penalization
 
