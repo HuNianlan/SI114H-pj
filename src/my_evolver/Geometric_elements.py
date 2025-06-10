@@ -266,7 +266,7 @@ def find_edge_by_vertices(v1:Vertex, v2:Vertex) -> Edge:
 
 def update_vertex_coordinates(Verts:torch.Tensor):
     """Update the coordinates of all vertex."""
-    print(len(global_state.VERTEXS), len(Verts))
+    # print(len(global_state.VERTEXS), len(Verts))
     # assert len(Verts) == len(VERTEXS), "The number of vertices must match the number of vertex coordinates provided."
     Verts=Verts.tolist()
     for i, vertex in enumerate(global_state.VERTEXS):
