@@ -4,7 +4,7 @@ class Vertex:
     """A class representing a vertex in a 3D space with an ID, coordinates, and neighbors.
     Each vertex can have multiple neighbors, which are also vertices."""
     _count:int = 0  # Class variable to keep track of the number of vertices
-    def __init__(self, x, y,z=0,is_fixed:bool = False, boundary:bool = False):
+    def __init__(self, x, y,z=0,is_fixed:bool = False, on_boundary:bool = False):
         Vertex._count += 1
         self.vertex_id:int = Vertex._count # Unique ID for each vertex
         self.x:float = x
@@ -12,7 +12,7 @@ class Vertex:
         self.z:float = z
         self.coord = torch.tensor([x, y, z], dtype=torch.float32)  # Coordinates as a tensor
         self.is_fixed = is_fixed
-        self.boundary = boundary
+        self.on_boundary = on_boundary
         # self.E_grad:torch.Tensor = torch.tensor([0.0, 0.0, 0.0], dtype=torch.float32)  # Gradient placeholder
         # self.vgrad:torch.Tensor = torch.tensor([0.0, 0.0, 0.0], dtype=torch.float32)  # Volume gradient placeholder
 
@@ -257,6 +257,7 @@ def update_vertex_coordinates(Verts:torch.Tensor):
     Verts=Verts.tolist()
     for i, vertex in enumerate(global_state.VERTEXS):
         x, y, z = Verts[i]
+        if vertex.is_fixed == True: continue
         vertex.x = x
         vertex.y = y
         vertex.z = z
