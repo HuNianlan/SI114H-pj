@@ -4,7 +4,7 @@ class Vertex:
     """A class representing a vertex in a 3D space with an ID, coordinates, and neighbors.
     Each vertex can have multiple neighbors, which are also vertices."""
     _count:int = 0  # Class variable to keep track of the number of vertices
-    def __init__(self, x, y,z,is_fixed:bool = False, boundary:bool = False):
+    def __init__(self, x, y,z=0,is_fixed:bool = False, boundary:bool = False):
         Vertex._count += 1
         self.vertex_id:int = Vertex._count # Unique ID for each vertex
         self.x:float = x

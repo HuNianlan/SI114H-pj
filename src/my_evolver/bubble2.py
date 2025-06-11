@@ -85,6 +85,8 @@ import polyscope as ps
 import numpy as np
 ps.init()
 ps.set_ground_plane_mode('none')
-ps.register_surface_mesh("Mesh_result",np.array(get_vertex_list()),np.array(get_facet_list()))
+mesh = ps.register_surface_mesh("Mesh_result",np.array(get_vertex_list()),np.array(get_facet_list()),color=(0,0,0),edge_color=(1.0, 1.0, 1.0))
+mesh.set_smooth_shade(False)
+mesh.set_edge_width(1.0)
 ps.show()
 
