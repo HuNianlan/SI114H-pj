@@ -1,3 +1,5 @@
+import sys
+sys.path.append("my_evolver")
 from utils import get_facet_list,get_vertex_list,get_vertex_list1, get_facet_list1
 import numpy as np
 from refinement import refinement
@@ -69,6 +71,7 @@ volume_constraint = [1.0,2.0]
 
 initialize(vertices, edges, faces, bodies,volume_constraint)
 
+# print(utils.facet_diff)
 
 
 Verts:torch.Tensor = get_vertex_list1()
@@ -79,7 +82,6 @@ Faces:torch.Tensor = get_facet_list1()
 for i in range(3):
     iterate(get_vertex_list1(),get_facet_list1(), num_iterations=1000)
     refinement()
-
 
 import polyscope as ps
 import numpy as np
