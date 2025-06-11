@@ -180,12 +180,24 @@
 #   };
 
 # extern struct webstruct web;
+import global_state
+import torch
+from init import initialize
+from constraint import Constraint,Volume
+from energy import Energy,Area
+from utils import get_vertex_list1,get_edge_list,get_facet_list1
 
 class webstruct:
-    def __init__(self):
-        self.sdim = 3 #dimension of ambient space
-        self.total_area = 0.0 #Total area of the mesh
-        self.total_energy = 0.0
-        # ... and so on for the rest of the fields ...
+    def __init__(self,vertex_list, edge_list, face_list,body_list,volume_constraint,energy:Energy = Area(),sdim = 3):#默认body constraint只有volume
+        self.sdim = sdim #dimension of ambient space
+        initialize(vertex_list, edge_list, face_list,body_list)
+        for body,v_cons in zip(global_state.BODIES,volume_constraint):
+            if v_cons is not None:
+                body.add_constraints(Volume(float(v_cons)))
+        self.energy:Energy = energy
+        self.vertices:torch.Tensor = get_vertex_list1()
+        self.facets:torch.Tensor = get_facet_list1()
+        
 
-web:webstruct = webstruct()
+
+# web:webstruct = webstruct()

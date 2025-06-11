@@ -9,7 +9,7 @@ class Constraint:
     def compute_constraint(self, Verts: torch.Tensor, Facets: torch.Tensor):
         # Placeholder for constraint computation logic
         pass
-    def compute_and_store_gradient(self, Verts: torch.Tensor, Facets: torch.Tensor):
+    def compute_and_store_gradient(self, Verts: torch.Tensor, Facets: torch.Tensor)->torch.Tensor:
         '''Compute the gradient of the constraint with respect to the vertices.'''
         # Placeholder for gradient computation logic
         pass
@@ -30,7 +30,7 @@ class Volume(Constraint):
         signed_volume = torch.sum(Signs * volume_per_face) / 6
         return signed_volume
 
-    def compute_and_store_gradient(self,Verts:torch.Tensor,Facets:torch.Tensor):
+    def compute_and_store_gradient(self,Verts:torch.Tensor,Facets:torch.Tensor, Signs: torch.Tensor=None):
         '''Compute the gradient of the volume constraint with respect to the vertices.'''
-        self.e_grad=torch.autograd.functional.jacobian(lambda x: self.compute_constraint(x,Facets),Verts)
+        self.e_grad=torch.autograd.functional.jacobian(lambda x: self.compute_constraint(x,Facets,Signs),Verts)
         return self.e_grad

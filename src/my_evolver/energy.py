@@ -12,7 +12,8 @@ class Energy:
     def compute_and_store_gradient(self,Verts:torch.Tensor,Facets:torch.Tensor):
         '''Compute the gradient of the energy with respect to the vertices.'''
         # Placeholder for gradient computation logic
-        pass
+        self.e_grad=torch.autograd.functional.jacobian(lambda x: self.compute_energy(x,Facets),Verts)
+        # pass
 
 class Area(Energy):
     '''A class to compute the area energy of a global geometric body.'''
