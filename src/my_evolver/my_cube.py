@@ -1,7 +1,6 @@
 from utils import get_facet_list1,get_vertex_list1,get_facet_list,get_vertex_list
 from refinement import refinement
 from init import initialize
-import polyscope as ps
 from energy import Area,Energy
 from constraint import Volume,Constraint
 from Geometric_Elements import update_vertex_coordinates
@@ -44,11 +43,47 @@ for i in range(3):
 
 
 ########################################################################################################
-import polyscope as ps
+import pyvista as pv
 import numpy as np
-ps.init()
-ps.set_ground_plane_mode('none')
-ps.register_surface_mesh("Mesh_result",np.array(get_vertex_list()),np.array(get_facet_list()))
-# ps.register_surface_mesh("Mesh_result",Verts.detach().numpy(),Faces.numpy())
-# ps.register_surface_mesh("Mesh_init",np.array(get_vertex_list()),np.array(get_facet_list()))
-ps.show()
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+
+# ============= 替换为Matplotlib可视化 =============
+vertices = np.array(get_vertex_list())
+faces = np.array(get_facet_list())
+
+# 创建图形
+fig = plt.figure(figsize=(10, 8))
+ax = fig.add_subplot(111, projection='3d')
+
+# 准备面数据
+mesh_faces = []
+for face in faces:
+    if len(face) == 3:  # 三角形
+        mesh_faces.append(vertices[face])
+    elif len(face) == 4:  # 四边形分割为两个三角形
+        mesh_faces.append(vertices[face[[0,1,2]]])
+        mesh_faces.append(vertices[face[[0,2,3]]])
+
+# 添加网格面片
+mesh = Poly3DCollection(
+    mesh_faces,
+    alpha=0.8,
+    linewidths=0.5,
+    edgecolor='k',
+    facecolor='lightblue'
+)
+ax.add_collection3d(mesh)
+
+# 设置坐标轴
+min_coord, max_coord = vertices.min(), vertices.max()
+ax.set_xlim(min_coord, max_coord)
+ax.set_ylim(min_coord, max_coord)
+ax.set_zlim(min_coord, max_coord)
+ax.set_xlabel('X')
+ax.set_ylabel('Y')
+ax.set_zlabel('Z')
+
+plt.tight_layout()
+plt.show()
