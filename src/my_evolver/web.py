@@ -180,24 +180,188 @@
 #   };
 
 # extern struct webstruct web;
-import global_state
 import torch
-from init import initialize
 from constraint import Constraint,Volume
 from energy import Energy,Area
-from utils import get_vertex_list1,get_edge_list,get_facet_list1
-
+from Geometric_Elements import Vertex,Edge,Face,Facet,Body
+import numpy as np
 class webstruct:
-    def __init__(self,vertex_list, edge_list, face_list,body_list,volume_constraint,energy:Energy = Area(),sdim = 3):#默认body constraint只有volume
+    def __init__(self,vertex_list, edge_list, face_list,body_list=None,volume_constraint=None,energy:Energy = Area(),sdim = 3):#默认body constraint只有volume
         self.sdim = sdim #dimension of ambient space
-        initialize(vertex_list, edge_list, face_list,body_list)
-        for body,v_cons in zip(global_state.BODIES,volume_constraint):
+        self.energy:Energy = energy
+        self.VERTEXS:list[Vertex] = []
+        self.EDGES:list[Edge]=[]
+        self.FACES:list[Face]=[]
+        self.FACETS:list[Facet]=[]
+        self.BODIES:list[Body]=[]
+        self.create_vertices(vertex_list)
+        self.create_edges(edge_list)
+        self.create_bodies(body_list,volume_constraint)  # Create bodies if provided
+        self.create_facets(face_list)  # Create faces from the face list
+        self.update_facet_of_body()  # Update facets of bodies after creation
+        self.get_para()  # Print the number of vertices, edges, and facets after initialization
+        if body_list is not None:
+            for i in range(len(body_list)):
+                self.get_body_para(i + 1)
+
+
+    def update_facet_of_body(self):
+        """Update the facets of each body based on the current FACETS."""
+        for body in self.BODIES:
+            body.update_facet_list()  # Update the list of facets in the body
+            body.update_facet_sign()  # Update the signs of the facets in the body
+
+
+    def create_vertices(self,vertex_list:list[list[float]]):
+        """Create a list of Vertex objects from a list of coordinates and add it to VERTEXS."""
+        # assert vertex_list[0].all()==0, "The first vertex must be at the origin (0, 0, 0)"
+        for v in vertex_list:
+            # VERTEXS.append(Vertex(v))
+            self.VERTEXS.append(Vertex(x=v[0], y=v[1], z=v[2]))
+
+
+    def create_edges(self,edge_list:list[list[int]]):
+        """Create a list of Edge objects from a list of vertex indices and add it to EDGES."""
+        for e in edge_list:
+            self.EDGES.append(Edge(vertex1=self.VERTEXS[e[0]-1], vertex2=self.VERTEXS[e[1]-1]))
+
+    def create_facets(self,face_list:list[list[int]]):
+        for f in face_list:
+            vertex_list = []
+            for edge in f:
+                if edge < 0:
+                    vertex_list.append(self.EDGES[-edge-1].vertex2)
+                else:
+                    vertex_list.append(self.EDGES[edge-1].vertex1)
+            # Create face edges from the edge indices
+            f = Face(vertexs=vertex_list)
+            self.FACES.append(f)
+            for body in self.BODIES:
+                for fid in body.directed_face_list:
+                    if abs(fid) == f.face_id:
+                        body.add_facet_by_id(sign=1 if fid > 0 else -1)
+                        break
+            f.triangulation(self.FACETS,self.VERTEXS,self.EDGES)
+
+
+    def create_bodies(self,body_list:list[list[int]],volume_constraint):
+        """Create a list of Body objects from a list of facet indices."""
+        if body_list is None:return
+        for b in body_list:
+            self.BODIES.append(Body(face_list=b))  # Initialize with empty faces
+        for body,v_cons in zip(self.BODIES,volume_constraint):
             if v_cons is not None:
                 body.add_constraints(Volume(float(v_cons)))
-        self.energy:Energy = energy
-        self.vertices:torch.Tensor = get_vertex_list1()
-        self.facets:torch.Tensor = get_facet_list1()
-        
 
+    def find_vertex_by_coordinates(self,x:float, y:float, z:float) -> Vertex:
+        """Find a vertex by its coordinates."""
+        for v in self.VERTEXS:
+            if v.x == x and v.y == y and v.z == z:
+                return v
+        return None
 
-# web:webstruct = webstruct()
+    def find_edge_by_vertices(self,v1:Vertex, v2:Vertex) -> Edge:
+        """Find an edge by its two vertices."""
+        for e in self.EDGES:
+            if (e.vertex1.vertex_id == v1.vertex_id and e.vertex2.vertex_id == v2.vertex_id) or (e.vertex1.vertex_id == v2.vertex_id and e.vertex2.vertex_id == v1.vertex_id):
+                return e
+        return None
+
+    def update_vertex_coordinates(self,Verts:torch.Tensor):
+        """Update the coordinates of all vertex."""
+        # print(len(self.VERTEXS), len(Verts))
+        # assert len(Verts) == len(VERTEXS), "The number of vertices must match the number of vertex coordinates provided."
+        Verts=Verts.tolist()
+        for i, vertex in enumerate(self.VERTEXS):
+            x, y, z = Verts[i]
+            if vertex.is_fixed == True: continue
+            vertex.x = x
+            vertex.y = y
+            vertex.z = z
+            vertex.coord = torch.tensor([x, y, z], dtype=torch.float32)  # Update the tensor coordinates
+
+    def get_vertex_list(self) -> list[list[float]]:
+        """Get the coordinates of all vertices."""
+        return [[v.x, v.y, v.z] for v in self.VERTEXS]
+
+    def get_vertex_tensor(self) ->torch.Tensor:
+        """Get the coordinates of all vertices as a tensor."""
+        if len(self.VERTEXS)==0:return None
+        return torch.stack([v.coord for v in self.VERTEXS])
+
+    def get_edge_list(self) -> list[list[int]]:
+        """Get the list of edges as pairs of vertex IDs."""
+        return [[e.vertex1.vertex_id, e.vertex2.vertex_id] for e in self.EDGES]
+
+    def get_facet_list(self) -> list[list[int]]:
+        """Get the list of facets as triplets of vertex IDs."""
+        return [[f.vertex1.vertex_id-1, f.vertex2.vertex_id-1, f.vertex3.vertex_id-1] for f in self.FACETS]
+
+    def get_facet_tensor(self) ->torch.Tensor:
+        """Get the list of facets as a tensor of vertex coordinates."""
+        return torch.tensor([[f.vertex1.vertex_id-1, f.vertex2.vertex_id-1, f.vertex3.vertex_id-1] for f in self.FACETS], dtype=torch.int64)
+
+    def get_body_tensor(self)->torch.Tensor:
+        """Get the list of bodies as a tensor of facet coordinates"""
+        if len(self.BODIES)==0:return None
+        return torch.stack([torch.tensor(np.array(b.get_facet_list())-self.facet_diff) for b in self.BODIES])
+
+    def get_para(self):
+        print(f"vertices:{len(self.VERTEXS)}, edges:{len(self.EDGES)}, facets:{len(self.FACETS)}")
+
+    def get_body_para(self,bid):
+        body:Body = self.BODIES[bid-1]
+        print(f"body {bid}: volume:{body.compute_volume()}, area:{body.get_surface_area()}")
+
+    def get_or_create_midpoint(self,v1, v2):
+        x, y, z = (v1.x + v2.x) / 2, (v1.y + v2.y) / 2, (v1.z + v2.z) / 2
+        mid = self.find_vertex_by_coordinates(x, y, z)
+        if mid is None:
+            mid = Vertex(x, y, z)
+            self.VERTEXS.append(mid)
+        return mid
+
+    def get_or_create_edge(self,v1, v2):
+        if self.find_edge_by_vertices(v1, v2) is None:
+            self.EDGES.append(Edge(v1, v2))
+
+    def single_facet_refinement(self,facet: Facet):
+        v1, v2, v3 = facet.vertex1, facet.vertex2, facet.vertex3
+
+        # Midpoints
+        mid12 = self.get_or_create_midpoint(v1, v2)
+        mid23 = self.get_or_create_midpoint(v2, v3)
+        mid31 = self.get_or_create_midpoint(v3, v1)
+
+        # Create edges (with duplication check)
+        self.get_or_create_edge(v1, mid12)
+        self.get_or_create_edge(v2, mid23)
+        self.get_or_create_edge(v3, mid31)
+        self.get_or_create_edge(mid12, mid23)
+        self.get_or_create_edge(mid23, mid31)
+        self.get_or_create_edge(mid31, mid12)
+
+        # Create new facets
+        self.FACETS.append(Facet(v1, mid12, mid31,facet._face_id))
+        self.FACETS.append(Facet(mid12, v2, mid23,facet._face_id))
+        self.FACETS.append(Facet(mid31, mid23, v3,facet._face_id))
+        self.FACETS.append(Facet(mid12, mid23, mid31,facet._face_id))
+
+    def refinement(self):
+        n = len(self.FACETS)
+        m = len(self.EDGES)
+
+        # Copy of the original facets to avoid modifying while iterating
+        original_facets = self.FACETS[:n]
+
+        for facet in original_facets:
+            self.single_facet_refinement(facet)
+
+        del self.FACETS[:n]  # Remove original facets
+        del self.EDGES[:m]   # Remove old edges
+        self.facet_diff += n
+        self.edge_diff += m
+
+        self.update_facet_of_body()
+        self.get_para()  # Print info
+

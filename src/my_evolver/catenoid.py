@@ -33,30 +33,21 @@ for i in range(num_segments):
 # 连接上下圆柱
 for i in range(num_segments):
     edge_list.append([i + 1, i + 7])
-
 # -------------------- 面片构造（6 个长方形，每个转成两个三角形） --------------------
-face_list = []
-for i in range(num_segments):
-    top1 = i + 1
-    top2 = (i + 1) % num_segments + 1
-    bot1 = top1 + 6
-    bot2 = top2 + 6
-
-    # 使用正序顶点，两个三角形面
-    face_list.append([top1, bot2, bot1])
-    face_list.append([top1, top2, bot2])
+face_list = [[1,14,-7,-13],[2,15,-8,-14],[3,16,-9,-15],[4,17,-10,-16],[5,18,-11,-17],[6,13,-12,-18]]
 
 # -------------------- 体（body） --------------------
-face_indices = list(range(1, len(face_list) + 1))  # 1-based
-body_list = [face_indices]
+body_list = []
 volume_constraint = []  # 不用 volume，而是用固定边界
 
 # -------------------- 初始化数据 --------------------
 initialize(vertex_list, edge_list, face_list, body_list, volume_constraint)
 
-for i in range(3):
-    iterate_catenoid(get_vertex_list1(),get_facet_list1(), num_iterations=20)
-    refinement()
+
+iterate_catenoid(get_vertex_list1(),get_facet_list1(), num_iterations=10)
+refinement()
+iterate_catenoid(get_vertex_list1(),get_facet_list1(), num_iterations=15)
+
 # 2648
 
 

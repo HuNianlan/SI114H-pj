@@ -23,8 +23,9 @@ class MeshVisualizer:
         import polyscope as ps
         ps.init()
         ps.set_ground_plane_mode('none')
-        mesh = ps.register_surface_mesh(title, np.array(vertices), np.array(faces),color=(0,0,0))
-        mesh.set_edge_color((1,1,1))
+        mesh = ps.register_surface_mesh(title, np.array(vertices), np.array(faces))
+        mesh.set_color((1,1,1))
+        mesh.set_edge_color((0,0,0))
         mesh.set_edge_width(1)
         ps.show()
 

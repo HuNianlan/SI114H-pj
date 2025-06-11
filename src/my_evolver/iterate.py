@@ -156,22 +156,11 @@ def iterate_catenoid(Verts: torch.Tensor = get_vertex_list1(), Faces: torch.Tens
         # 1. 计算面积能量的梯度
         E_grad = energy.compute_and_store_gradient(Verts, Faces)
 
-        # 2. 对固定点进行屏蔽：不更新 + 不求梯度
-        # grad = E_grad.clone()
-        # grad[fixed_mask] = 0.0
-
-        # 3. 求解线性系统（预处理梯度方向）
-        grad = solver.solve(E_grad)
-
         # 4. 设置 Verts 的梯度
-        Verts.grad = grad
+        Verts.grad = -E_grad
 
         # 5. 梯度下降更新
         optimizer.step()
-
-        # 6. 再次屏蔽固定点的更新（强制恢复原位置）
-        with torch.no_grad():
-            Verts[fixed_mask] = Verts.detach()[fixed_mask]
 
     # 7. 更新 global_state 中的顶点坐标（坐标写回 Vertex 对象
 

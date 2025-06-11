@@ -45,23 +45,23 @@ class Face:
         Face._count += 1
         self.face_id:int = Face._count  # Unique ID for each face
         self.vertexs:list[Vertex] = vertexs
-    def triangulation(self):
+    def triangulation(self,facets:list=global_state.FACETS,vertexs:list = global_state.VERTEXS,edges:list = global_state.EDGES):
         """Triangulate the face by connecting each edge to the center point"""
         n = len(self.vertexs)
         if n == 3:
-            global_state.FACETS.append(Facet(self.vertexs[0], self.vertexs[1], self.vertexs[2],self.face_id))  # Add triangle to the global list
+            facets.append(Facet(self.vertexs[0], self.vertexs[1], self.vertexs[2],self.face_id))  # Add triangle to the global list
             return
         center_x = sum(v.x for v in self.vertexs) / n
         center_y = sum(v.y for v in self.vertexs) / n
         center_z = sum(v.z for v in self.vertexs) / n
 
         center_vertex = Vertex(x=center_x, y=center_y, z=center_z)
-        global_state.VERTEXS.append(center_vertex)  # Add center vertex to the global list
+        vertexs.append(center_vertex)  # Add center vertex to the global list
         for i in range(n):
             v1 = self.vertexs[i]
             v2 = self.vertexs[(i + 1) % n]
-            global_state.EDGES.append(Edge(center_vertex,v1))
-            global_state.FACETS.append(Facet(center_vertex, v1, v2,self.face_id))
+            edges.append(Edge(center_vertex,v1))
+            facets.append(Facet(center_vertex, v1, v2,self.face_id))
 
 
 
