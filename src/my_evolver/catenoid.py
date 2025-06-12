@@ -40,8 +40,8 @@ volume_constraint = []
 # -------------------- 初始化数据 --------------------
 from web import webstruct
 web = webstruct(vertex_list, edge_list, face_list,body_list,volume_constraint)
-for i in range(1):
-    iterate_catenoid(web, num_iterations=15)
+for i in range(3):
+    iterate_catenoid(web, num_iterations=50)
     web.refinement()
 
 

@@ -116,6 +116,7 @@ def iterate_catenoid(web:webstruct, num_iterations: int = 10):
         # Verts.grad = E_grad
         # 5. 梯度下降更新
         optimizer.step()
+        web.project_boundary_points_to_circle(Verts)
         # Verts = torch.cat([Verts_static,Verts_requires_grad], dim=0)
 
     # 7. 更新 global_state 中的顶点坐标（坐标写回 Vertex 对象

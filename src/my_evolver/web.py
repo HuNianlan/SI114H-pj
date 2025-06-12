@@ -185,7 +185,7 @@ from constraint import Constraint,Volume
 from energy import Energy,Area
 from Geometric_Elements import Vertex,Edge,Face,Facet,Body
 import numpy as np
-
+import math
 class webstruct:
     def __init__(self,vertex_list, edge_list, face_list,body_list=None,volume_constraint=None,energy:Energy = Area(),sdim = 3):#默认body constraint只有volume
         self.sdim = sdim #dimension of ambient space
@@ -203,6 +203,8 @@ class webstruct:
         self.create_facets(face_list)  # Create faces from the face list
         self.update_facet_of_body()  # Update facets of bodies after creation
         self.get_para()  # Print the number of vertices, edges, and facets after initialization
+        self.boundary_radius = 1.5088795
+        
         if body_list is not None:
             for i in range(len(body_list)):
                 self.get_body_para(i + 1)
@@ -367,3 +369,28 @@ class webstruct:
 
     def get_vertex_mask(self)->torch.Tensor:
         return  [[1-v.is_fixed, 1-v.is_fixed, 1-v.is_fixed] for v in self.VERTEXS]
+    
+    def project_boundary_points_to_circle(self, Verts):
+        """
+        将所有在圆面边界上但非 fixed 的点，投影回边界圆上。
+        假设边界圆函数为 (x, y, z) = (R * cos(θ), R * sin(θ), z)
+        """
+        top_z = 1
+        bottom_z = -1
+
+        with torch.no_grad():
+            for idx, vertex in enumerate(self.VERTEXS):
+                if vertex.is_fixed:
+                    continue
+
+                x, y, z = Verts[idx].tolist()
+                theta = math.atan2(y, x)
+
+                if abs(vertex.z - top_z) < 1e-6:
+                    Verts[idx, 0] = self.boundary_radius * math.cos(theta)
+                    Verts[idx, 1] = self.boundary_radius * math.sin(theta)
+                    Verts[idx, 2] = top_z
+                elif abs(vertex.z - bottom_z) < 1e-6:
+                    Verts[idx, 0] = self.boundary_radius * math.cos(theta)
+                    Verts[idx, 1] = self.boundary_radius * math.sin(theta)
+                    Verts[idx, 2] = bottom_z
