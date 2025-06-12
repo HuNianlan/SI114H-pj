@@ -159,22 +159,15 @@ faces = data['faces']
 bodies = data['bodies']
 volume_constraint = data['volumes']
 
-
-########################################################################################################
-from utils import get_facet_list1,get_vertex_list1,get_facet_list,get_vertex_list
-from refinement import refinement
-from init import initialize
-import polyscope as ps
 from iterate import iterate
-initialize(vertices,edges, faces,bodies,volume_constraint)
-
+########################################################################################################
+from web import webstruct
+web = webstruct(vertices, edges, faces, bodies,volume_constraint)
 for i in range(3):
-    iterate(get_vertex_list1(),get_facet_list1(), num_iterations=500)
-    refinement()
-# 2648
-
+    iterate(web, num_iterations=1000)
+    web.refinement()
 
 ########################################################################################################
 from visualization import plot_mesh
 
-plot_mesh(get_vertex_list(), get_facet_list(), "Optimized Mesh")
+plot_mesh(web.get_vertex_list(), web.get_facet_list(), "Optimized Mesh")
