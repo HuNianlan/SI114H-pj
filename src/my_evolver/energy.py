@@ -1,4 +1,3 @@
-# from Geometric_Elements import Vertex, Facet, Edge, Body
 # from utils import get_vertex_list1,get_facet_list1
 import torch
 class Energy:

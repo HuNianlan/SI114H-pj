@@ -1,6 +1,6 @@
 from math import pi, cos, sin
 from init import initialize
-from iterate import iterate_catenoid
+from iterate import iterate_catenoid,iterate
 from refinement import refinement
 from utils import get_vertex_list1, get_facet_list1, get_facet_list,get_vertex_list
 import polyscope as ps
@@ -37,16 +37,18 @@ for i in range(num_segments):
 face_list = [[1,14,-7,-13],[2,15,-8,-14],[3,16,-9,-15],[4,17,-10,-16],[5,18,-11,-17],[6,13,-12,-18]]
 
 # -------------------- 体（body） --------------------
+# body_list = [[-1,-2,-3,-4,-5,-6]]
+# volume_constraint = [1.1]  # 不用 volume，而是用固定边界
 body_list = []
-volume_constraint = []  # 不用 volume，而是用固定边界
-
+volume_constraint = []
 # -------------------- 初始化数据 --------------------
 initialize(vertex_list, edge_list, face_list, body_list, volume_constraint)
 
-
-iterate_catenoid(get_vertex_list1(),get_facet_list1(), num_iterations=10)
 refinement()
+# refinement()
 iterate_catenoid(get_vertex_list1(),get_facet_list1(), num_iterations=15)
+# refinement()
+# iterate(get_vertex_list1(),get_facet_list1(), num_iterations=15)
 
 # 2648
 

@@ -3,6 +3,8 @@ from Geometric_Elements import Body
 import numpy as np
 import torch
 
+
+
 def get_vertex_list() -> list[list[float]]:
     """Get the coordinates of all vertices."""
     return [[v.x, v.y, v.z] for v in global_state.VERTEXS]
@@ -11,6 +13,11 @@ def get_vertex_list1() ->torch.Tensor:
     """Get the coordinates of all vertices as a tensor."""
     if len(global_state.VERTEXS)==0:return None
     return torch.stack([v.coord for v in global_state.VERTEXS])
+
+
+def get_vertex_mask()->torch.Tensor:
+    return  [[1-v.is_fixed, 1-v.is_fixed, 1-v.is_fixed] for v in global_state.VERTEXS]
+
 
 def get_edge_list() -> list[list[int]]:
     """Get the list of edges as pairs of vertex IDs."""

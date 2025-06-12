@@ -143,10 +143,10 @@ class Body:
     def add_constraints(self,constraint:Constraint):
         self.constraints.append(constraint)
 
-    def compute_volume(self) -> float:
+    def compute_volume(self,FACETS:list[Facet] = global_state.FACETS) -> float:
         """Calculate the volume of the body using the divergence theorem."""
         volume = 0.0
-        for facet in global_state.FACETS:
+        for facet in FACETS:
             if facet._face_id in self.faces:
                 ind = self.faces.index(facet._face_id)
                 sign = self.face_sign[ind]
@@ -155,22 +155,22 @@ class Body:
         return volume
 
 
-    def get_surface_area(self) -> float:
+    def get_surface_area(self,FACETS:list[Facet] = global_state.FACETS) -> float:
         """Calculate the surface area of the body."""
         surface_area = 0.0
-        for facet in global_state.FACETS:
+        for facet in FACETS:
             if facet._face_id in self.faces:
                 surface_area += facet.area()
         return surface_area
 
-    def update_facet_list(self):
+    def update_facet_list(self,FACETS:list[Facet] = global_state.FACETS):
         """Update the list of facets in the body based on the current FACETS."""
-        self.facets = [f.facet_id for f in global_state.FACETS if f._face_id in self.faces]
+        self.facets = [f.facet_id for f in FACETS if f._face_id in self.faces]
 
-    def update_facet_sign(self):
+    def update_facet_sign(self,FACETS:list[Facet] = global_state.FACETS):
         """Get the signs of the facets in the body."""
         sign = []
-        for f in global_state.FACETS:
+        for f in FACETS:
             if f._face_id in self.faces:
                 ind = self.faces.index(f._face_id)
                 sign.append(self.face_sign[ind])
@@ -196,7 +196,8 @@ def create_vertices(vertex_list:list[list[float]]):
     # assert vertex_list[0].all()==0, "The first vertex must be at the origin (0, 0, 0)"
     for v in vertex_list:
         # VERTEXS.append(Vertex(v))
-        global_state.VERTEXS.append(Vertex(x=v[0], y=v[1], z=v[2]))
+        is_fixed = v[3] if len(v) > 3 else False
+        global_state.VERTEXS.append(Vertex(x=v[0], y=v[1], z=v[2],is_fixed = is_fixed))
 
 
 def create_edges(edge_list:list[list[int]]):
@@ -257,8 +258,8 @@ def update_vertex_coordinates(Verts:torch.Tensor):
     Verts=Verts.tolist()
     for i, vertex in enumerate(global_state.VERTEXS):
         x, y, z = Verts[i]
-        if vertex.is_fixed == True: continue
-        vertex.x = x
-        vertex.y = y
-        vertex.z = z
-        vertex.coord = torch.tensor([x, y, z], dtype=torch.float32)  # Update the tensor coordinates
+        if vertex.is_fixed == False: 
+            vertex.x = x
+            vertex.y = y
+            vertex.z = z
+            vertex.coord = torch.tensor([x, y, z], dtype=torch.float32)  # Update the tensor coordinates

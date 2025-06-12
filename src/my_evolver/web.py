@@ -185,6 +185,7 @@ from constraint import Constraint,Volume
 from energy import Energy,Area
 from Geometric_Elements import Vertex,Edge,Face,Facet,Body
 import numpy as np
+
 class webstruct:
     def __init__(self,vertex_list, edge_list, face_list,body_list=None,volume_constraint=None,energy:Energy = Area(),sdim = 3):#默认body constraint只有volume
         self.sdim = sdim #dimension of ambient space
@@ -194,6 +195,8 @@ class webstruct:
         self.FACES:list[Face]=[]
         self.FACETS:list[Facet]=[]
         self.BODIES:list[Body]=[]
+        self.facet_diff = 1
+        self.edge_diff = 1
         self.create_vertices(vertex_list)
         self.create_edges(edge_list)
         self.create_bodies(body_list,volume_constraint)  # Create bodies if provided
@@ -208,8 +211,8 @@ class webstruct:
     def update_facet_of_body(self):
         """Update the facets of each body based on the current FACETS."""
         for body in self.BODIES:
-            body.update_facet_list()  # Update the list of facets in the body
-            body.update_facet_sign()  # Update the signs of the facets in the body
+            body.update_facet_list(FACETS=self.FACETS)  # Update the list of facets in the body
+            body.update_facet_sign(FACETS=self.FACETS)  # Update the signs of the facets in the body
 
 
     def create_vertices(self,vertex_list:list[list[float]]):
@@ -246,7 +249,6 @@ class webstruct:
 
     def create_bodies(self,body_list:list[list[int]],volume_constraint):
         """Create a list of Body objects from a list of facet indices."""
-        if body_list is None:return
         for b in body_list:
             self.BODIES.append(Body(face_list=b))  # Initialize with empty faces
         for body,v_cons in zip(self.BODIES,volume_constraint):
@@ -311,7 +313,7 @@ class webstruct:
 
     def get_body_para(self,bid):
         body:Body = self.BODIES[bid-1]
-        print(f"body {bid}: volume:{body.compute_volume()}, area:{body.get_surface_area()}")
+        print(f"body {bid}: volume:{body.compute_volume(self.FACETS)}, area:{body.get_surface_area(self.FACETS)}")
 
     def get_or_create_midpoint(self,v1, v2):
         x, y, z = (v1.x + v2.x) / 2, (v1.y + v2.y) / 2, (v1.z + v2.z) / 2
