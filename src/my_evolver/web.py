@@ -219,8 +219,9 @@ class webstruct:
         """Create a list of Vertex objects from a list of coordinates and add it to VERTEXS."""
         # assert vertex_list[0].all()==0, "The first vertex must be at the origin (0, 0, 0)"
         for v in vertex_list:
-            # VERTEXS.append(Vertex(v))
-            self.VERTEXS.append(Vertex(x=v[0], y=v[1], z=v[2]))
+            is_fixed = v[3] if len(v) > 3 else False
+            self.VERTEXS.append(Vertex(x=v[0], y=v[1], z=v[2],is_fixed = is_fixed))
+
 
 
     def create_edges(self,edge_list:list[list[int]]):
@@ -276,11 +277,8 @@ class webstruct:
         Verts=Verts.tolist()
         for i, vertex in enumerate(self.VERTEXS):
             x, y, z = Verts[i]
-            if vertex.is_fixed == True: continue
-            vertex.x = x
-            vertex.y = y
-            vertex.z = z
-            vertex.coord = torch.tensor([x, y, z], dtype=torch.float32)  # Update the tensor coordinates
+            vertex.move(x,y,z)
+
 
     def get_vertex_list(self) -> list[list[float]]:
         """Get the coordinates of all vertices."""

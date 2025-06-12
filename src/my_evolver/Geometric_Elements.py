@@ -18,7 +18,16 @@ class Vertex:
 
     def __repr__(self):
         return f"Vertex(id={self.vertex_id}, x={self.x}, y={self.y}, z={self.z})"
+    
+    def move(self,x,y,z):
+        if self.is_fixed:return
+        self.x = x
+        self.y = y
+        self.z = z
+        self.coord = torch.tensor([x, y, z], dtype=torch.float32)
 
+    
+        
 
 class Edge:
     _count:int = 0  # Class variable to keep track of the number of edges
