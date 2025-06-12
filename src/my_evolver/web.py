@@ -220,9 +220,12 @@ class webstruct:
         """Create a list of Vertex objects from a list of coordinates and add it to VERTEXS."""
         # assert vertex_list[0].all()==0, "The first vertex must be at the origin (0, 0, 0)"
         for v in vertex_list:
-            is_fixed = v[1] if len(v) > 1 else False
-            boundary = v[2] if len(v) > 2 else None
-            self.VERTEXS.append(Vertex.from_vertex_list(v[0],is_fixed = is_fixed,boundary_func=boundary))
+            if type(v[0])==float:
+                self.VERTEXS.append(Vertex(v[0],v[1],v[2]))
+            else:
+                is_fixed = v[1] if len(v) > 1 else False
+                boundary = v[2] if len(v) > 2 else None
+                self.VERTEXS.append(Vertex.from_vertex_list(v[0],is_fixed = is_fixed,boundary_func=boundary))
 
 
 

@@ -59,11 +59,11 @@ face_list = [[1,14,-7,-13],[2,15,-8,-14],[3,16,-9,-15],[4,17,-10,-16],[5,18,-11,
 body_list = []
 volume_constraint = []
 
-
-web = webstruct(vertex_list, edge_list, face_list,body_list,volume_constraint)
-for i in range(1):
+from energy import Sq_Mean_Curvature
+web = webstruct(vertex_list, edge_list, face_list,body_list,volume_constraint,Sq_Mean_Curvature())
+for i in range(3):
     web.refinement()
-    iterate_catenoid(web, num_iterations=20)
+    iterate_catenoid(web, num_iterations=10)
 
 ########################################################################################################
 from visualization import plot_mesh

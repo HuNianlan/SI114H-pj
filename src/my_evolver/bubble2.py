@@ -74,9 +74,10 @@ volume_constraint = [1.0,2.0]
 
 ##################################################################
 from web import webstruct
-web = webstruct(vertices, edges, faces, bodies,volume_constraint)
+from energy import Sq_Mean_Curvature
+web = webstruct(vertices, edges, faces, bodies,volume_constraint,Sq_Mean_Curvature())
 for i in range(3):
-    iterate(web, num_iterations=500)
+    iterate(web, num_iterations=50)
     web.refinement()
 
 ##################################################################

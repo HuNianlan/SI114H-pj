@@ -175,7 +175,7 @@ def iterate(web:webstruct,num_iterations:int=10):
 
         Verts.grad=total_E_grad-torch.sum(((V_grad.transpose(0,2))*F).transpose(0,2),dim=0)
 
-        Verts.grad = solver.solve(Verts.grad) # solver for linear system we can substitute with the cg solver
+        # Verts.grad = solver.solve(Verts.grad) # solver for linear system we can substitute with the cg solver
 
         #Gradient descent step
         # with torch.no_grad():
