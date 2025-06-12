@@ -1,9 +1,5 @@
 from math import pi, cos, sin
-from init import initialize
 from iterate import iterate_catenoid,iterate
-from refinement import refinement
-from utils import get_vertex_list1, get_facet_list1, get_facet_list,get_vertex_list
-import polyscope as ps
 
 # -------------------- 顶点坐标（12个点，按角度计算） ----------------------
 RMAX = 1.5088795
@@ -42,15 +38,12 @@ face_list = [[1,14,-7,-13],[2,15,-8,-14],[3,16,-9,-15],[4,17,-10,-16],[5,18,-11,
 body_list = []
 volume_constraint = []
 # -------------------- 初始化数据 --------------------
-initialize(vertex_list, edge_list, face_list, body_list, volume_constraint)
+from web import webstruct
+web = webstruct(vertex_list, edge_list, face_list,body_list,volume_constraint)
+for i in range(1):
+    iterate_catenoid(web, num_iterations=15)
+    web.refinement()
 
-refinement()
-# refinement()
-iterate_catenoid(get_vertex_list1(),get_facet_list1(), num_iterations=15)
-# refinement()
-# iterate(get_vertex_list1(),get_facet_list1(), num_iterations=15)
-
-# 2648
 
 
 ########################################################################################################
@@ -63,4 +56,4 @@ iterate_catenoid(get_vertex_list1(),get_facet_list1(), num_iterations=15)
 
 from visualization import plot_mesh
 
-plot_mesh(get_vertex_list(), get_facet_list(), "Optimized Mesh")
+plot_mesh(web.get_vertex_list(), web.get_facet_list(), "Optimized Mesh")

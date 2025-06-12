@@ -367,3 +367,5 @@ class webstruct:
         self.update_facet_of_body()
         self.get_para()  # Print info
 
+    def get_vertex_mask(self)->torch.Tensor:
+        return  [[1-v.is_fixed, 1-v.is_fixed, 1-v.is_fixed] for v in self.VERTEXS]

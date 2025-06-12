@@ -37,7 +37,7 @@ volume_constraint = [1.0]
 from web import webstruct
 web = webstruct(vertex_list, edge_list, face_list,body_list,volume_constraint)
 for i in range(3):
-    iterate(web, num_iterations=5000)
+    iterate(web, num_iterations=500)
     web.refinement()
 ########################################################################################################
 from visualization import plot_mesh
