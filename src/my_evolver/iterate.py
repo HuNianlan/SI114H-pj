@@ -1,10 +1,5 @@
 # 我们先构建一个模拟 "web" 的状态类，并实现相关依赖函数的框架。
-import math
 import random
-from typing import List, Tuple
-import global_state
-gocount = 0  # 模拟迭代计数器
-
 # Diffusion / pinning 等
 def diffuse(): pass
 def check_pinning(): pass
