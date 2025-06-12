@@ -203,7 +203,6 @@ class webstruct:
         self.create_facets(face_list)  # Create faces from the face list
         self.update_facet_of_body()  # Update facets of bodies after creation
         self.get_para()  # Print the number of vertices, edges, and facets after initialization
-        self.boundary_radius = 1.5088795
         
         if body_list is not None:
             for i in range(len(body_list)):

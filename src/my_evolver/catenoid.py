@@ -61,9 +61,9 @@ volume_constraint = []
 
 
 web = webstruct(vertex_list, edge_list, face_list,body_list,volume_constraint)
-for i in range(3):
-    iterate_catenoid(web, num_iterations=50)
+for i in range(1):
     web.refinement()
+    iterate_catenoid(web, num_iterations=20)
 
 ########################################################################################################
 from visualization import plot_mesh
