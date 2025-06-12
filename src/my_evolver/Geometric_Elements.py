@@ -4,7 +4,7 @@ class Vertex:
     """A class representing a vertex in a 3D space with an ID, coordinates, and neighbors.
     Each vertex can have multiple neighbors, which are also vertices."""
     _count:int = 0  # Class variable to keep track of the number of vertices
-    def __init__(self, x, y,z=0,is_fixed:bool = False, on_boundary:bool = False):
+    def __init__(self, x, y,z=0,is_fixed:bool = False, boundary_func = None):
         Vertex._count += 1
         self.vertex_id:int = Vertex._count # Unique ID for each vertex
         self.x:float = x
@@ -12,7 +12,11 @@ class Vertex:
         self.z:float = z
         self.coord = torch.tensor([x, y, z], dtype=torch.float32)  # Coordinates as a tensor
         self.is_fixed = is_fixed
-        self.on_boundary = on_boundary
+        self.boundary_func = boundary_func
+        if self.boundary_func == None:
+            self.on_boundary = False
+        else:
+            self.on_boundary = True
         # self.E_grad:torch.Tensor = torch.tensor([0.0, 0.0, 0.0], dtype=torch.float32)  # Gradient placeholder
         # self.vgrad:torch.Tensor = torch.tensor([0.0, 0.0, 0.0], dtype=torch.float32)  # Volume gradient placeholder
 
@@ -32,13 +36,20 @@ class Vertex:
 class Edge:
     _count:int = 0  # Class variable to keep track of the number of edges
     """A class representing an edge in a 3D space, defined by two vertices."""
-    def __init__(self, vertex1:Vertex, vertex2:Vertex):
+    def __init__(self, vertex1:Vertex, vertex2:Vertex,is_fixed = False,boundary_func = None):
         Edge._count += 1
         self.edge_id:int = Edge._count  # Unique ID for each edge
         # self.edge_id:int = get_next_edge_id()
         assert vertex1.vertex_id != vertex2.vertex_id, "Vertices must be different"
         self.vertex1:Vertex = vertex1
         self.vertex2:Vertex = vertex2
+        self.is_fixed = is_fixed
+        self.boundary_func = boundary_func
+        if self.boundary_func == None:
+            self.on_boundary = False
+        else:
+            self.on_boundary = True
+
     def __repr__(self):
         return f"Edge(vertex1={self.vertex1.vertex_id}, vertex2={self.vertex2.vertex_id})"
     def length(self):
@@ -50,10 +61,18 @@ class Edge:
 class Face:
     _count:int = 0  # Class variable to keep track of the number of faces
     """A class representing a face in a 3D space"""
-    def __init__(self, vertexs:list[Vertex]):
+    # def __init__(self, vertexs:list[Vertex]):
+    #     Face._count += 1
+    #     self.face_id:int = Face._count  # Unique ID for each face
+    #     self.vertexs:list[Vertex] = vertexs
+    
+    def __init__(self, vertexs:list[Vertex],edges:list[Edge],ori:list[int]):
         Face._count += 1
         self.face_id:int = Face._count  # Unique ID for each face
+        self.edges:list[Edge] = edges
+        self.ori:list[int] = ori
         self.vertexs:list[Vertex] = vertexs
+    
     def triangulation(self,facets:list=global_state.FACETS,vertexs:list = global_state.VERTEXS,edges:list = global_state.EDGES):
         """Triangulate the face by connecting each edge to the center point"""
         n = len(self.vertexs)

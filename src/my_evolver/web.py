@@ -230,17 +230,26 @@ class webstruct:
         """Create a list of Edge objects from a list of vertex indices and add it to EDGES."""
         for e in edge_list:
             self.EDGES.append(Edge(vertex1=self.VERTEXS[e[0]-1], vertex2=self.VERTEXS[e[1]-1]))
-
+    
     def create_facets(self,face_list:list[list[int]]):
-        for f in face_list:
+        for edge_list in face_list:
             vertex_list = []
-            for edge in f:
+            edges_list=[]
+            ori=[]
+            for edge in edge_list:
                 if edge < 0:
-                    vertex_list.append(self.EDGES[-edge-1].vertex2)
+                    e=self.EDGES[-edge-1]
+                    edges_list.append(e)
+                    ori.append(-1)
+                    vertex_list.append(e.vertex2)
                 else:
+                    e=self.EDGES[edge-1]
+                    edges_list.append(e)
+                    ori.append(1)
                     vertex_list.append(self.EDGES[edge-1].vertex1)
+            
             # Create face edges from the edge indices
-            f = Face(vertexs=vertex_list)
+            f = Face(vertexs=vertex_list,edges=edges_list,ori=ori)
             self.FACES.append(f)
             for body in self.BODIES:
                 for fid in body.directed_face_list:
@@ -315,11 +324,12 @@ class webstruct:
         body:Body = self.BODIES[bid-1]
         print(f"body {bid}: volume:{body.compute_volume(self.FACETS)}, area:{body.get_surface_area(self.FACETS)}")
 
-    def get_or_create_midpoint(self,v1, v2):
+    def get_or_create_midpoint(self,v1:Vertex, v2:Vertex):
         x, y, z = (v1.x + v2.x) / 2, (v1.y + v2.y) / 2, (v1.z + v2.z) / 2
         mid = self.find_vertex_by_coordinates(x, y, z)
         if mid is None:
-            mid = Vertex(x, y, z)
+            e = self.find_edge_by_vertices(v1,v2)
+            mid = Vertex(x, y, z,boundary_func=e.boundary_func)
             self.VERTEXS.append(mid)
         return mid
 
@@ -339,6 +349,9 @@ class webstruct:
         self.get_or_create_edge(v1, mid12)
         self.get_or_create_edge(v2, mid23)
         self.get_or_create_edge(v3, mid31)
+        self.get_or_create_edge(mid12,v2)
+        self.get_or_create_edge(mid23,v3)
+        self.get_or_create_edge(mid31,v1)
         self.get_or_create_edge(mid12, mid23)
         self.get_or_create_edge(mid23, mid31)
         self.get_or_create_edge(mid31, mid12)
