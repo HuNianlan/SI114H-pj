@@ -91,6 +91,7 @@ class Facet:
     def from_edges(cls, edge1:Edge, edge2:Edge, edge3:Edge):
         """Create a Facet from three edges."""
         return cls(edge1.vertex1, edge2.vertex1, edge3.vertex1)
+    
     def __repr__(self):
         return f"Face(vertex1={self.vertex1.vertex_id}, vertex2={self.vertex2.vertex_id}, vertex3={self.vertex3.vertex_id})"
     def area(self)-> float:
@@ -117,10 +118,10 @@ class Facet:
     
 
 
-def faces_to_facets(faces:list[Face]):
-    """Convert a list of Face objects to a list of Facet objects."""
-    for face in faces:
-        face.triangulation()
+# def faces_to_facets(faces:list[Face]):
+#     """Convert a list of Face objects to a list of Facet objects."""
+#     for face in faces:
+#         face.triangulation()
 
 from constraint import Constraint
 
