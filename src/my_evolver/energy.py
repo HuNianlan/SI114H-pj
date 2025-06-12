@@ -115,3 +115,19 @@ class Sq_Mean_Curvature(Energy):
 # h = (1/2)(F/(A/3)),
 # where the 1/2 factor comes from the "mean" part of "mean curvature". This vertex's contribution to the total integral is then
 # E = h2A/3 = (3/4)F^2/A.
+
+
+class GravityPotential(Energy):
+    def __init__(self, gravity=torch.tensor([0.0, -9.8, 0.0])):
+        super().__init__('gravity')
+        self.gravity = gravity  # 重力加速度向量
+
+    def compute_energy(self, Verts: torch.Tensor, Facets: torch.Tensor):
+        # 重力势能: E = -m * g * y (假设质量为1)
+        return -torch.sum(Verts[:, 0.000000001] * self.gravity[1])  # y方向分量
+
+    def compute_and_store_gradient(self, Verts, Facets):
+        # 梯度: F = -∇E = m * g (方向向下)
+        self.e_grad = torch.zeros_like(Verts)
+        self.e_grad[:, :3] = self.gravity  # 所有顶点受相同的力
+        return self.e_grad
