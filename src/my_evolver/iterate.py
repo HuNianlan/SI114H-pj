@@ -142,12 +142,14 @@ import numpy as np
 #         optimizer.step() 
 
 #     update_vertex_coordinates(Verts)
-
+from web import webstruct
 from utils import get_vertex_mask
-def iterate_catenoid(Verts: torch.Tensor = get_vertex_list1(), Faces: torch.Tensor = get_facet_list1(), energy: Energy = Area(), num_iterations: int = 10): 
+def iterate_catenoid(web:webstruct, num_iterations: int = 10): 
     # Verts_requires_grad = Verts[12:].clone().detach()  # 后 k 个需要梯度
     # Verts_requires_grad.requires_grad = True
     # Verts_static = Verts[:11].clone().detach()  # 其余不需要梯度
+    Verts = web.get_vertex_tensor()
+    Faces = web.get_facet_tensor()
     Verts.requires_grad = True
     optimizer = Adam([{'params': Verts, 'lr': 0.01}])
 
@@ -158,7 +160,7 @@ def iterate_catenoid(Verts: torch.Tensor = get_vertex_list1(), Faces: torch.Tens
         mask = torch.tensor(get_vertex_mask())
         # print(mask)
         # 1. 计算面积能量的梯度
-        E_grad = energy.compute_and_store_gradient(Verts, Faces)
+        E_grad = web.energy.compute_and_store_gradient(Verts, Faces)
         # print(energy.compute_energy(Verts, Faces))
         # print(E_grad)
         # Verts_requires_grad = -E_grad[6:].clone()
@@ -171,11 +173,11 @@ def iterate_catenoid(Verts: torch.Tensor = get_vertex_list1(), Faces: torch.Tens
 
     # 7. 更新 global_state 中的顶点坐标（坐标写回 Vertex 对象
 
-    update_vertex_coordinates(Verts)
+    web.update_vertex_coordinates(Verts)
 
 
 
-from web import webstruct
+
 def iterate(web:webstruct,num_iterations:int=10):
     Verts = web.get_vertex_tensor()
     Faces = web.get_facet_tensor()

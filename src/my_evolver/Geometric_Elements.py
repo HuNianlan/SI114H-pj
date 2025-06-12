@@ -183,83 +183,83 @@ class Body:
         return torch.tensor(self.facet_sign, dtype=torch.int8)
     
 
-def update_facet_of_body():
-    """Update the facets of each body based on the current FACETS."""
-    for body in global_state.BODIES:
-        body.update_facet_list()  # Update the list of facets in the body
-        body.update_facet_sign()  # Update the signs of the facets in the body
+# def update_facet_of_body():
+#     """Update the facets of each body based on the current FACETS."""
+#     for body in global_state.BODIES:
+#         body.update_facet_list()  # Update the list of facets in the body
+#         body.update_facet_sign()  # Update the signs of the facets in the body
 
 
 
-def create_vertices(vertex_list:list[list[float]]):
-    """Create a list of Vertex objects from a list of coordinates and add it to VERTEXS."""
-    # assert vertex_list[0].all()==0, "The first vertex must be at the origin (0, 0, 0)"
-    for v in vertex_list:
-        # VERTEXS.append(Vertex(v))
-        is_fixed = v[3] if len(v) > 3 else False
-        global_state.VERTEXS.append(Vertex(x=v[0], y=v[1], z=v[2],is_fixed = is_fixed))
+# def create_vertices(vertex_list:list[list[float]]):
+#     """Create a list of Vertex objects from a list of coordinates and add it to VERTEXS."""
+#     # assert vertex_list[0].all()==0, "The first vertex must be at the origin (0, 0, 0)"
+#     for v in vertex_list:
+#         # VERTEXS.append(Vertex(v))
+#         is_fixed = v[3] if len(v) > 3 else False
+#         global_state.VERTEXS.append(Vertex(x=v[0], y=v[1], z=v[2],is_fixed = is_fixed))
 
 
-def create_edges(edge_list:list[list[int]]):
-    """Create a list of Edge objects from a list of vertex indices and add it to EDGES."""
-    for e in edge_list:
-        global_state.EDGES.append(Edge(vertex1=global_state.VERTEXS[e[0]-1], vertex2=global_state.VERTEXS[e[1]-1]))
+# def create_edges(edge_list:list[list[int]]):
+#     """Create a list of Edge objects from a list of vertex indices and add it to EDGES."""
+#     for e in edge_list:
+#         global_state.EDGES.append(Edge(vertex1=global_state.VERTEXS[e[0]-1], vertex2=global_state.VERTEXS[e[1]-1]))
 
-def create_facets(face_list:list[list[int]]):
-    for f in face_list:
-        vertex_list = []
-        for edge in f:
-            if edge < 0:
-                vertex_list.append(global_state.EDGES[-edge-1].vertex2)
-            else:
-                vertex_list.append(global_state.EDGES[edge-1].vertex1)
-        # Create face edges from the edge indices
-        f = Face(vertexs=vertex_list)
-        global_state.FACES.append(f)
-        for body in global_state.BODIES:
-            for fid in body.directed_face_list:
-                if abs(fid) == f.face_id:
-                    body.add_facet_by_id(sign=1 if fid > 0 else -1)
-                    break
-        f.triangulation()
+# def create_facets(face_list:list[list[int]]):
+#     for f in face_list:
+#         vertex_list = []
+#         for edge in f:
+#             if edge < 0:
+#                 vertex_list.append(global_state.EDGES[-edge-1].vertex2)
+#             else:
+#                 vertex_list.append(global_state.EDGES[edge-1].vertex1)
+#         # Create face edges from the edge indices
+#         f = Face(vertexs=vertex_list)
+#         global_state.FACES.append(f)
+#         for body in global_state.BODIES:
+#             for fid in body.directed_face_list:
+#                 if abs(fid) == f.face_id:
+#                     body.add_facet_by_id(sign=1 if fid > 0 else -1)
+#                     break
+#         f.triangulation()
     
 
 
-        # FACETS.extend(faces_to_facets(faces))  # Convert face to facets and add to FACETS
-from constraint import Volume
+#         # FACETS.extend(faces_to_facets(faces))  # Convert face to facets and add to FACETS
+# from constraint import Volume
 
 
-def create_bodies(body_list:list[list[int]],volume_constraint):
-    """Create a list of Body objects from a list of facet indices."""
-    for b in body_list:
-        global_state.BODIES.append(Body(face_list=b))  # Initialize with empty faces
-    for body,v_cons in zip(global_state.BODIES,volume_constraint):
-        if v_cons is not None:
-            body.add_constraints(Volume(float(v_cons)))
+# def create_bodies(body_list:list[list[int]],volume_constraint):
+#     """Create a list of Body objects from a list of facet indices."""
+#     for b in body_list:
+#         global_state.BODIES.append(Body(face_list=b))  # Initialize with empty faces
+#     for body,v_cons in zip(global_state.BODIES,volume_constraint):
+#         if v_cons is not None:
+#             body.add_constraints(Volume(float(v_cons)))
 
-def find_vertex_by_coordinates(x:float, y:float, z:float) -> Vertex:
-    """Find a vertex by its coordinates."""
-    for v in global_state.VERTEXS:
-        if v.x == x and v.y == y and v.z == z:
-            return v
-    return None
+# def find_vertex_by_coordinates(x:float, y:float, z:float) -> Vertex:
+#     """Find a vertex by its coordinates."""
+#     for v in global_state.VERTEXS:
+#         if v.x == x and v.y == y and v.z == z:
+#             return v
+#     return None
 
-def find_edge_by_vertices(v1:Vertex, v2:Vertex) -> Edge:
-    """Find an edge by its two vertices."""
-    for e in global_state.EDGES:
-        if (e.vertex1.vertex_id == v1.vertex_id and e.vertex2.vertex_id == v2.vertex_id) or (e.vertex1.vertex_id == v2.vertex_id and e.vertex2.vertex_id == v1.vertex_id):
-            return e
-    return None
+# def find_edge_by_vertices(v1:Vertex, v2:Vertex) -> Edge:
+#     """Find an edge by its two vertices."""
+#     for e in global_state.EDGES:
+#         if (e.vertex1.vertex_id == v1.vertex_id and e.vertex2.vertex_id == v2.vertex_id) or (e.vertex1.vertex_id == v2.vertex_id and e.vertex2.vertex_id == v1.vertex_id):
+#             return e
+#     return None
 
-def update_vertex_coordinates(Verts:torch.Tensor):
-    """Update the coordinates of all vertex."""
+# def update_vertex_coordinates(Verts:torch.Tensor):
+    # """Update the coordinates of all vertex."""
     # print(len(global_state.VERTEXS), len(Verts))
     # assert len(Verts) == len(VERTEXS), "The number of vertices must match the number of vertex coordinates provided."
-    Verts=Verts.tolist()
-    for i, vertex in enumerate(global_state.VERTEXS):
-        x, y, z = Verts[i]
-        if vertex.is_fixed == False: 
-            vertex.x = x
-            vertex.y = y
-            vertex.z = z
-            vertex.coord = torch.tensor([x, y, z], dtype=torch.float32)  # Update the tensor coordinates
+    # Verts=Verts.tolist()
+    # for i, vertex in enumerate(global_state.VERTEXS):
+    #     x, y, z = Verts[i]
+    #     if vertex.is_fixed == False: 
+    #         vertex.x = x
+    #         vertex.y = y
+    #         vertex.z = z
+    #         vertex.coord = torch.tensor([x, y, z], dtype=torch.float32)  # Update the tensor coordinates
