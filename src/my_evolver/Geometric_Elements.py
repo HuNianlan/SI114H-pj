@@ -25,6 +25,12 @@ class Vertex:
         """Create a Facet from three edges."""
         return cls(v[0], v[1], v[2],is_fixed,boundary_func)
     
+    @classmethod
+    def from_boundary_func(cls,par,is_fixed:bool = False, boundary_func:Boundary = None):
+        """Create a Facet from three edges."""
+        v = boundary_func.cal_cord(par)
+        return cls(v[0], v[1], v[2],is_fixed,boundary_func)
+    
     def __repr__(self):
         return f"Vertex(id={self.vertex_id}, x={self.x}, y={self.y}, z={self.z})"
     
