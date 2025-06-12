@@ -4,7 +4,7 @@ class Vertex:
     """A class representing a vertex in a 3D space with an ID, coordinates, and neighbors.
     Each vertex can have multiple neighbors, which are also vertices."""
     _count:int = 0  # Class variable to keep track of the number of vertices
-    def __init__(self, x, y,z=0,is_fixed:bool = False, boundary:bool = False):
+    def __init__(self, x, y,z=0,is_fixed:bool = False, on_boundary:bool = False):
         Vertex._count += 1
         self.vertex_id:int = Vertex._count # Unique ID for each vertex
         self.x:float = x
@@ -12,7 +12,7 @@ class Vertex:
         self.z:float = z
         self.coord = torch.tensor([x, y, z], dtype=torch.float32)  # Coordinates as a tensor
         self.is_fixed = is_fixed
-        self.boundary = boundary
+        self.on_boundary = on_boundary
         # self.E_grad:torch.Tensor = torch.tensor([0.0, 0.0, 0.0], dtype=torch.float32)  # Gradient placeholder
         # self.vgrad:torch.Tensor = torch.tensor([0.0, 0.0, 0.0], dtype=torch.float32)  # Volume gradient placeholder
 
@@ -45,23 +45,23 @@ class Face:
         Face._count += 1
         self.face_id:int = Face._count  # Unique ID for each face
         self.vertexs:list[Vertex] = vertexs
-    def triangulation(self):
+    def triangulation(self,facets:list=global_state.FACETS,vertexs:list = global_state.VERTEXS,edges:list = global_state.EDGES):
         """Triangulate the face by connecting each edge to the center point"""
         n = len(self.vertexs)
         if n == 3:
-            global_state.FACETS.append(Facet(self.vertexs[0], self.vertexs[1], self.vertexs[2],self.face_id))  # Add triangle to the global list
+            facets.append(Facet(self.vertexs[0], self.vertexs[1], self.vertexs[2],self.face_id))  # Add triangle to the global list
             return
         center_x = sum(v.x for v in self.vertexs) / n
         center_y = sum(v.y for v in self.vertexs) / n
         center_z = sum(v.z for v in self.vertexs) / n
 
         center_vertex = Vertex(x=center_x, y=center_y, z=center_z)
-        global_state.VERTEXS.append(center_vertex)  # Add center vertex to the global list
+        vertexs.append(center_vertex)  # Add center vertex to the global list
         for i in range(n):
             v1 = self.vertexs[i]
             v2 = self.vertexs[(i + 1) % n]
-            global_state.EDGES.append(Edge(center_vertex,v1))
-            global_state.FACETS.append(Facet(center_vertex, v1, v2,self.face_id))
+            edges.append(Edge(center_vertex,v1))
+            facets.append(Facet(center_vertex, v1, v2,self.face_id))
 
 
 
@@ -143,10 +143,10 @@ class Body:
     def add_constraints(self,constraint:Constraint):
         self.constraints.append(constraint)
 
-    def compute_volume(self) -> float:
+    def compute_volume(self,FACETS:list[Facet] = global_state.FACETS) -> float:
         """Calculate the volume of the body using the divergence theorem."""
         volume = 0.0
-        for facet in global_state.FACETS:
+        for facet in FACETS:
             if facet._face_id in self.faces:
                 ind = self.faces.index(facet._face_id)
                 sign = self.face_sign[ind]
@@ -155,22 +155,22 @@ class Body:
         return volume
 
 
-    def get_surface_area(self) -> float:
+    def get_surface_area(self,FACETS:list[Facet] = global_state.FACETS) -> float:
         """Calculate the surface area of the body."""
         surface_area = 0.0
-        for facet in global_state.FACETS:
+        for facet in FACETS:
             if facet._face_id in self.faces:
                 surface_area += facet.area()
         return surface_area
 
-    def update_facet_list(self):
+    def update_facet_list(self,FACETS:list[Facet] = global_state.FACETS):
         """Update the list of facets in the body based on the current FACETS."""
-        self.facets = [f.facet_id for f in global_state.FACETS if f._face_id in self.faces]
+        self.facets = [f.facet_id for f in FACETS if f._face_id in self.faces]
 
-    def update_facet_sign(self):
+    def update_facet_sign(self,FACETS:list[Facet] = global_state.FACETS):
         """Get the signs of the facets in the body."""
         sign = []
-        for f in global_state.FACETS:
+        for f in FACETS:
             if f._face_id in self.faces:
                 ind = self.faces.index(f._face_id)
                 sign.append(self.face_sign[ind])
@@ -196,7 +196,8 @@ def create_vertices(vertex_list:list[list[float]]):
     # assert vertex_list[0].all()==0, "The first vertex must be at the origin (0, 0, 0)"
     for v in vertex_list:
         # VERTEXS.append(Vertex(v))
-        global_state.VERTEXS.append(Vertex(x=v[0], y=v[1], z=v[2]))
+        is_fixed = v[3] if len(v) > 3 else False
+        global_state.VERTEXS.append(Vertex(x=v[0], y=v[1], z=v[2],is_fixed = is_fixed))
 
 
 def create_edges(edge_list:list[list[int]]):
@@ -257,7 +258,8 @@ def update_vertex_coordinates(Verts:torch.Tensor):
     Verts=Verts.tolist()
     for i, vertex in enumerate(global_state.VERTEXS):
         x, y, z = Verts[i]
-        vertex.x = x
-        vertex.y = y
-        vertex.z = z
-        vertex.coord = torch.tensor([x, y, z], dtype=torch.float32)  # Update the tensor coordinates
+        if vertex.is_fixed == False: 
+            vertex.x = x
+            vertex.y = y
+            vertex.z = z
+            vertex.coord = torch.tensor([x, y, z], dtype=torch.float32)  # Update the tensor coordinates

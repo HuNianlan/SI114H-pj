@@ -1,9 +1,8 @@
-from utils import get_facet_list1,get_vertex_list1,get_facet_list,get_vertex_list
-from refinement import refinement
-from init import initialize
-from energy import Area,Energy
-from constraint import Volume,Constraint
-from Geometric_Elements import update_vertex_coordinates
+# from utils import get_facet_list1,get_vertex_list1,get_facet_list,get_vertex_list
+# from refinement import refinement
+# from init import initialize
+# from energy import Area,Energy
+# from constraint import Volume,Constraint
 from iterate import iterate
 ########################################################################################################
 vertex_list = [[0.0,0.0,0.0],
@@ -28,16 +27,20 @@ face_list = [[1,10,-5,-9],
 body_list = [[1,2,3,4,5,6]]
 volume_constraint = [1.0]
 ########################################################################################################
-initialize(vertex_list, edge_list, face_list,body_list,volume_constraint)
+# initialize(vertex_list, edge_list, face_list,body_list,volume_constraint)
 
-for i in range(3):
-    iterate(get_vertex_list1(),get_facet_list1(), num_iterations=500)
-    refinement()
+# for i in range(3):
+#     iterate(get_vertex_list1(),get_facet_list1(), num_iterations=5000)
+#     refinement()
 # 2648
 
-
+from web import webstruct
+web = webstruct(vertex_list, edge_list, face_list,body_list,volume_constraint)
+for i in range(3):
+    iterate(web, num_iterations=5000)
+    web.refinement()
 ########################################################################################################
 from visualization import plot_mesh
 
-plot_mesh(get_vertex_list(), get_facet_list(), "Optimized Mesh")
+plot_mesh(web.get_vertex_list(), web.get_facet_list(), "Optimized Mesh")
 

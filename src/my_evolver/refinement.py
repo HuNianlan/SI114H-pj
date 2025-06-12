@@ -3,10 +3,13 @@ from utils import get_para
 import global_state
 # from utils import edge_diff, facet_diff
 
-def get_or_create_midpoint(v1, v2):
+def get_or_create_midpoint(v1:Vertex, v2:Vertex):
     x, y, z = (v1.x + v2.x) / 2, (v1.y + v2.y) / 2, (v1.z + v2.z) / 2
     mid = find_vertex_by_coordinates(x, y, z)
     if mid is None:
+        # is_fixed:bool= False
+        # if v1.is_fixed and v2.is_fixed:
+        #     is_fixed = True
         mid = Vertex(x, y, z)
         global_state.VERTEXS.append(mid)
     return mid

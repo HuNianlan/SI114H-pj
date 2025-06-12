@@ -97,7 +97,88 @@ def laplacian_uniform(verts, faces):
 
 import global_state
 import numpy as np
-def iterate(Verts:torch.Tensor=get_vertex_list1(), Faces:torch.Tensor=get_facet_list1(), num_iterations:int=10):
+
+# def iterate(Verts:torch.Tensor=get_vertex_list1(), Faces:torch.Tensor=get_facet_list1(),energy:Energy=Area(),num_iterations:int=10):
+#     Verts.requires_grad = True
+#     optimizer =Adam([{'params': Verts,'lr':0.01}]) #Choice of gradient descent scheme
+#     # optimizer =LineSearchSolver(energy_fn)([{'params': Verts,'lr':0.01}]) #Choice of gradient descent scheme
+
+#     lambda_=10.0
+#     M = compute_matrix(Verts, Faces, lambda_)
+#     solver = CholeskySolver(M@M)
+#     # constraint = global_state.BODIES[0].constraints[0]
+#     for _ in (range(num_iterations)):
+#         #Compute energy and volume gradients
+#         E_grad = energy.compute_and_store_gradient(Verts,Faces)
+#         V_grad = torch.empty((len(global_state.BODIES),len(Verts),3)) # 如果每个body只有一个constrains，后面要改
+#         target_val = torch.empty(len(global_state.BODIES))
+#         real_val = torch.empty(len(global_state.BODIES))
+        
+#         for idx,b in enumerate(global_state.BODIES):
+#             for cons in b.constraints:
+#                 b_f = Faces[np.array(b.get_facet_list())-global_state.facet_diff]
+#                 v_grad = cons.compute_and_store_gradient(Verts,b_f,Signs = b.get_facet_sign())
+#                 V_grad[idx]= -v_grad
+#                 target_val[idx]=cons.target_value
+#                 real_val[idx] = cons.compute_constraint(Verts,b_f,Signs = b.get_facet_sign())
+
+#         P = torch.sum(torch.sum((V_grad*V_grad.unsqueeze(1)),dim=3),dim=2)
+#         Q = torch.sum(torch.sum(E_grad*V_grad,dim=2),dim=1)
+        
+#         R = (target_val-real_val) #residual volume
+#         F = torch.linalg.solve(P,Q)
+#         M = torch.linalg.solve(P,R)
+
+#         with torch.no_grad():
+#             Verts -= torch.sum(((V_grad.transpose(0,2))*M).transpose(0,2),dim=0)
+
+#         Verts.grad=E_grad-torch.sum(((V_grad.transpose(0,2))*F).transpose(0,2),dim=0)
+
+#         Verts.grad = solver.solve(Verts.grad) # solver for linear system we can substitute with the cg solver
+
+#         #Gradient descent step
+#         # with torch.no_grad():
+#         #     Verts = Verts + V_grad*0.2
+#         optimizer.step() 
+
+#     update_vertex_coordinates(Verts)
+
+from utils import get_vertex_mask
+def iterate_catenoid(Verts: torch.Tensor = get_vertex_list1(), Faces: torch.Tensor = get_facet_list1(), energy: Energy = Area(), num_iterations: int = 10): 
+    # Verts_requires_grad = Verts[12:].clone().detach()  # 后 k 个需要梯度
+    # Verts_requires_grad.requires_grad = True
+    # Verts_static = Verts[:11].clone().detach()  # 其余不需要梯度
+    Verts.requires_grad = True
+    optimizer = Adam([{'params': Verts, 'lr': 0.01}])
+
+    lambda_ = 10.0
+    M = compute_matrix(Verts, Faces, lambda_)
+    
+    for _ in range(num_iterations):
+        mask = torch.tensor(get_vertex_mask())
+        # print(mask)
+        # 1. 计算面积能量的梯度
+        E_grad = energy.compute_and_store_gradient(Verts, Faces)
+        # print(energy.compute_energy(Verts, Faces))
+        # print(E_grad)
+        # Verts_requires_grad = -E_grad[6:].clone()
+        # 4. 设置 Verts 的梯度
+        Verts.grad = E_grad*mask.float()
+        # Verts.grad = E_grad
+        # 5. 梯度下降更新
+        optimizer.step()
+        # Verts = torch.cat([Verts_static,Verts_requires_grad], dim=0)
+
+    # 7. 更新 global_state 中的顶点坐标（坐标写回 Vertex 对象
+
+    update_vertex_coordinates(Verts)
+
+
+
+from web import webstruct
+def iterate(web:webstruct,num_iterations:int=10):
+    Verts = web.get_vertex_tensor()
+    Faces = web.get_facet_tensor()
     Verts.requires_grad = True
     optimizer =Adam([{'params': Verts,'lr':0.01}]) #Choice of gradient descent scheme
     # optimizer =LineSearchSolver(energy_fn)([{'params': Verts,'lr':0.01}]) #Choice of gradient descent scheme
@@ -119,14 +200,14 @@ def iterate(Verts:torch.Tensor=get_vertex_list1(), Faces:torch.Tensor=get_facet_
             total_E_grad += energy.compute_and_store_gradient(Verts, Faces)
         
         #Compute energy and volume gradients
-        # E_grad = energy.compute_and_store_gradient(Verts,Faces)
-        V_grad = torch.empty((len(global_state.BODIES),len(Verts),3)) # 如果每个body只有一个constrains，后面要改
-        target_val = torch.empty(len(global_state.BODIES))
-        real_val = torch.empty(len(global_state.BODIES))
+        E_grad = web.energy.compute_and_store_gradient(Verts,Faces)
+        V_grad = torch.empty((len(web.BODIES),len(Verts),3)) # 如果每个body只有一个constrains，后面要改
+        target_val = torch.empty(len(web.BODIES))
+        real_val = torch.empty(len(web.BODIES))
         
-        for idx,b in enumerate(global_state.BODIES):
+        for idx,b in enumerate(web.BODIES):
             for cons in b.constraints:
-                b_f = Faces[np.array(b.get_facet_list())-global_state.facet_diff]
+                b_f = Faces[np.array(b.get_facet_list())-web.facet_diff]
                 v_grad = cons.compute_and_store_gradient(Verts,b_f,Signs = b.get_facet_sign())
                 V_grad[idx]= -v_grad
                 target_val[idx]=cons.target_value
@@ -151,5 +232,4 @@ def iterate(Verts:torch.Tensor=get_vertex_list1(), Faces:torch.Tensor=get_facet_
         #     Verts = Verts + V_grad*0.2
         optimizer.step() 
 
-    update_vertex_coordinates(Verts)
-
+    web.update_vertex_coordinates(Verts)
