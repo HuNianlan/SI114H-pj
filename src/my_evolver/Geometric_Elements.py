@@ -1,10 +1,11 @@
 import torch
 import global_state
+from boundary import Boundary
 class Vertex:
     """A class representing a vertex in a 3D space with an ID, coordinates, and neighbors.
     Each vertex can have multiple neighbors, which are also vertices."""
     _count:int = 0  # Class variable to keep track of the number of vertices
-    def __init__(self, x, y,z=0,is_fixed:bool = False, boundary_func = None):
+    def __init__(self, x, y,z=0,is_fixed:bool = False, boundary_func:Boundary = None):
         Vertex._count += 1
         self.vertex_id:int = Vertex._count # Unique ID for each vertex
         self.x:float = x
@@ -19,7 +20,11 @@ class Vertex:
             self.on_boundary = True
         # self.E_grad:torch.Tensor = torch.tensor([0.0, 0.0, 0.0], dtype=torch.float32)  # Gradient placeholder
         # self.vgrad:torch.Tensor = torch.tensor([0.0, 0.0, 0.0], dtype=torch.float32)  # Volume gradient placeholder
-
+    @classmethod
+    def from_vertex_list(cls,v,is_fixed:bool = False, boundary_func:Boundary = None):
+        """Create a Facet from three edges."""
+        return cls(v[0], v[1], v[2],is_fixed,boundary_func)
+    
     def __repr__(self):
         return f"Vertex(id={self.vertex_id}, x={self.x}, y={self.y}, z={self.z})"
     
@@ -88,7 +93,8 @@ class Face:
         for i in range(n):
             v1 = self.vertexs[i]
             v2 = self.vertexs[(i + 1) % n]
-            edges.append(Edge(center_vertex,v1))
+            e = Edge(center_vertex,v1)
+            edges.append(e)
             facets.append(Facet(center_vertex, v1, v2,self.face_id))
 
 

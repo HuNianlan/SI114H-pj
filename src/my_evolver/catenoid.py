@@ -1,17 +1,38 @@
 from math import pi, cos, sin
 from iterate import iterate_catenoid,iterate
 
-# -------------------- 顶点坐标（12个点，按角度计算） ----------------------
-RMAX = 1.5088795
+# -------------------- 初始化数据 --------------------
+from web import webstruct
+from boundary import Boundary
+
+RMAX = 1.5088795   # minimum radius for height
 ZMAX = 1.0
+
+
+def bound_func1(rho):#upper ring
+    x = RMAX *cos(rho[0])
+    y = RMAX *sin(rho[0])
+    z = ZMAX
+    return [x,y,z]
+
+def bound_func2(rho):#lower ring
+    x = RMAX *cos(rho[0])
+    y = RMAX *sin(rho[0])
+    z = -ZMAX
+    return [x,y,z]
+
+boundary1 = Boundary(1,bound_func1)
+boundary2 = Boundary(1,bound_func2)
+
+# -------------------- 顶点坐标（12个点，按角度计算） ----------------------
 num_segments = 6
 
-theta = [i * 2 * pi / num_segments for i in range(num_segments)] # 0 - pi*5/3
+theta = [i * 2 * pi / num_segments for i in range(num_segments)] # 0 ~ pi*5/3
 
 # 上圆
-vertex_top = [[RMAX * cos(t), RMAX * sin(t), ZMAX, True] for t in theta]
+vertex_top = [[bound_func1([t]), True,boundary1] for t in theta]
 # 下圆
-vertex_bot = [[RMAX * cos(t), RMAX * sin(t), -ZMAX, True] for t in theta]
+vertex_bot = [[bound_func2([t]), True,boundary2] for t in theta]
 
 vertex_list = vertex_top + vertex_bot  # 共12个顶点
 
@@ -20,11 +41,11 @@ edge_list = []
 
 # 上圆 1-6 fixed
 for i in range(num_segments):
-    edge_list.append([i + 1, (i + 1) % num_segments + 1])
+    edge_list.append([i + 1, (i + 1) % num_segments + 1,True,boundary1])
 
 # 下圆 7-12 fixed
 for i in range(num_segments):
-    edge_list.append([i + 7, (i + 1) % num_segments + 7])
+    edge_list.append([i + 7, (i + 1) % num_segments + 7,True,boundary2])
 
 # 连接上下圆柱
 for i in range(num_segments):
@@ -37,23 +58,14 @@ face_list = [[1,14,-7,-13],[2,15,-8,-14],[3,16,-9,-15],[4,17,-10,-16],[5,18,-11,
 # volume_constraint = [1.1]  # 不用 volume，而是用固定边界
 body_list = []
 volume_constraint = []
-# -------------------- 初始化数据 --------------------
-from web import webstruct
+
+
 web = webstruct(vertex_list, edge_list, face_list,body_list,volume_constraint)
 for i in range(3):
     iterate_catenoid(web, num_iterations=50)
     web.refinement()
 
-
-
 ########################################################################################################
-# import polyscope as ps
-# import numpy as np
-# ps.init()
-# ps.set_ground_plane_mode('none')
-# ps.register_surface_mesh("Catenoid_result",np.array(get_vertex_list()),np.array(get_facet_list()))
-# ps.show()
-
 from visualization import plot_mesh
 
 plot_mesh(web.get_vertex_list(), web.get_facet_list(), "Optimized Mesh")

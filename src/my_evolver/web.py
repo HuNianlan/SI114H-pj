@@ -217,19 +217,22 @@ class webstruct:
             body.update_facet_sign(FACETS=self.FACETS)  # Update the signs of the facets in the body
 
 
-    def create_vertices(self,vertex_list:list[list[float]]):
+    def create_vertices(self,vertex_list:list):
         """Create a list of Vertex objects from a list of coordinates and add it to VERTEXS."""
         # assert vertex_list[0].all()==0, "The first vertex must be at the origin (0, 0, 0)"
         for v in vertex_list:
-            is_fixed = v[3] if len(v) > 3 else False
-            self.VERTEXS.append(Vertex(x=v[0], y=v[1], z=v[2],is_fixed = is_fixed))
+            is_fixed = v[1] if len(v) > 1 else False
+            boundary = v[2] if len(v) > 2 else None
+            self.VERTEXS.append(Vertex.from_vertex_list(v[0],is_fixed = is_fixed,boundary_func=boundary))
 
 
 
     def create_edges(self,edge_list:list[list[int]]):
         """Create a list of Edge objects from a list of vertex indices and add it to EDGES."""
         for e in edge_list:
-            self.EDGES.append(Edge(vertex1=self.VERTEXS[e[0]-1], vertex2=self.VERTEXS[e[1]-1]))
+            is_fixed = e[2] if len(e) > 2 else False
+            boundary = e[3] if len(e) > 3 else None
+            self.EDGES.append(Edge(vertex1=self.VERTEXS[e[0]-1], vertex2=self.VERTEXS[e[1]-1],is_fixed=is_fixed,boundary_func=boundary))
     
     def create_facets(self,face_list:list[list[int]]):
         for edge_list in face_list:
@@ -333,9 +336,9 @@ class webstruct:
             self.VERTEXS.append(mid)
         return mid
 
-    def get_or_create_edge(self,v1, v2):
+    def get_or_create_edge(self,v1, v2,boundary=None)->Edge:
         if self.find_edge_by_vertices(v1, v2) is None:
-            self.EDGES.append(Edge(v1, v2))
+            self.EDGES.append(Edge(v1, v2,boundary_func=boundary))
 
     def single_facet_refinement(self,facet: Facet):
         v1, v2, v3 = facet.vertex1, facet.vertex2, facet.vertex3
@@ -346,12 +349,23 @@ class webstruct:
         mid31 = self.get_or_create_midpoint(v3, v1)
 
         # Create edges (with duplication check)
-        self.get_or_create_edge(v1, mid12)
-        self.get_or_create_edge(v2, mid23)
-        self.get_or_create_edge(v3, mid31)
-        self.get_or_create_edge(mid12,v2)
-        self.get_or_create_edge(mid23,v3)
-        self.get_or_create_edge(mid31,v1)
+        e1 = self.find_edge_by_vertices(v1,v2)
+        assert e1 != None
+        self.get_or_create_edge(v1, mid12,e1.boundary_func)
+        self.get_or_create_edge(mid12,v2,e1.boundary_func)
+        
+
+        e2 = self.find_edge_by_vertices(v2,v3)
+        assert e2 != None
+        self.get_or_create_edge(v2, mid23,e2.boundary_func)
+        self.get_or_create_edge(mid23,v3,e2.boundary_func)
+        
+
+        e3 = self.find_edge_by_vertices(v1,v3)
+        assert e3 != None
+        self.get_or_create_edge(v3, mid31,e3.boundary_func)
+        self.get_or_create_edge(mid31,v1,e3.boundary_func)
+
         self.get_or_create_edge(mid12, mid23)
         self.get_or_create_edge(mid23, mid31)
         self.get_or_create_edge(mid31, mid12)
@@ -388,9 +402,6 @@ class webstruct:
         将所有在圆面边界上但非 fixed 的点，投影回边界圆上。
         假设边界圆函数为 (x, y, z) = (R * cos(θ), R * sin(θ), z)
         """
-        top_z = 1
-        bottom_z = -1
-
         with torch.no_grad():
             for idx, vertex in enumerate(self.VERTEXS):
                 if vertex.is_fixed:
@@ -399,11 +410,5 @@ class webstruct:
                 x, y, z = Verts[idx].tolist()
                 theta = math.atan2(y, x)
 
-                if abs(vertex.z - top_z) < 1e-6:
-                    Verts[idx, 0] = self.boundary_radius * math.cos(theta)
-                    Verts[idx, 1] = self.boundary_radius * math.sin(theta)
-                    Verts[idx, 2] = top_z
-                elif abs(vertex.z - bottom_z) < 1e-6:
-                    Verts[idx, 0] = self.boundary_radius * math.cos(theta)
-                    Verts[idx, 1] = self.boundary_radius * math.sin(theta)
-                    Verts[idx, 2] = bottom_z
+                if vertex.boundary_func is not None:
+                    Verts[idx]=torch.tensor(vertex.boundary_func.cal_cord([theta]))
