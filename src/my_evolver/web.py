@@ -399,18 +399,27 @@ class webstruct:
     def get_vertex_mask(self)->torch.Tensor:
         return  [[1-v.is_fixed, 1-v.is_fixed, 1-v.is_fixed] for v in self.VERTEXS]
     
-    def project_boundary_points_to_circle(self, Verts):
-        """
-        将所有在圆面边界上但非 fixed 的点，投影回边界圆上。
-        假设边界圆函数为 (x, y, z) = (R * cos(θ), R * sin(θ), z)
-        """
+    # def project_boundary_points_to_circle(self, Verts):
+    #     """
+    #     将所有在圆面边界上但非 fixed 的点，投影回边界圆上。
+    #     假设边界圆函数为 (x, y, z) = (R * cos(θ), R * sin(θ), z)
+    #     """
+    #     with torch.no_grad():
+    #         for idx, vertex in enumerate(self.VERTEXS):
+    #             if vertex.is_fixed:
+    #                 continue
+
+    #             x, y, z = Verts[idx].tolist()
+    #             theta = math.atan2(y, x)
+
+    #             if vertex.boundary_func is not None:
+    #                 Verts[idx]=torch.tensor(vertex.boundary_func.cal_cord([theta]))
+
+    def b_proj(self,Verts):
         with torch.no_grad():
             for idx, vertex in enumerate(self.VERTEXS):
                 if vertex.is_fixed:
                     continue
 
-                x, y, z = Verts[idx].tolist()
-                theta = math.atan2(y, x)
-
                 if vertex.boundary_func is not None:
-                    Verts[idx]=torch.tensor(vertex.boundary_func.cal_cord([theta]))
+                    Verts[idx]=torch.tensor(vertex.boundary_func.b_proj(Verts[idx].data))

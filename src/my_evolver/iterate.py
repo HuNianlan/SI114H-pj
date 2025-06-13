@@ -144,6 +144,7 @@ def iterate(web:webstruct,num_iterations:int=10):
     
     # constraint = global_state.BODIES[0].constraints[0]
     for _ in (range(num_iterations)):
+        mask = torch.tensor(web.get_vertex_mask())
         # 合并所有能量梯度
         total_E_grad = torch.zeros_like(Verts)
         for energy in energy_terms:
@@ -173,13 +174,17 @@ def iterate(web:webstruct,num_iterations:int=10):
         with torch.no_grad():
             Verts -= torch.sum(((V_grad.transpose(0,2))*M).transpose(0,2),dim=0)
 
-        Verts.grad=total_E_grad-torch.sum(((V_grad.transpose(0,2))*F).transpose(0,2),dim=0)
+        Verts.grad=(total_E_grad-torch.sum(((V_grad.transpose(0,2))*F).transpose(0,2),dim=0))*mask.float()
 
         # Verts.grad = solver.solve(Verts.grad) # solver for linear system we can substitute with the cg solver
 
         #Gradient descent step
         # with torch.no_grad():
         #     Verts = Verts + V_grad*0.2
+        # print(torch.max(Verts.grad))
         optimizer.step() 
+        # web.project_boundary_points_to_circle(Verts)
+        web.b_proj(Verts)
+
 
     web.update_vertex_coordinates(Verts)

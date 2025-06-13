@@ -3,7 +3,7 @@ from iterate import iterate_catenoid,iterate
 
 # -------------------- 初始化数据 --------------------
 from web import webstruct
-from boundary import Boundary
+from boundary import Boundary,Ring_XY
 
 RMAX = 1.5088795   # minimum radius for height
 ZMAX = 1.0
@@ -21,8 +21,11 @@ def bound_func2(rho):#lower ring
     z = -ZMAX
     return [x,y,z]
 
-boundary1 = Boundary(1,bound_func1)
-boundary2 = Boundary(1,bound_func2)
+# boundary1 = Boundary(1,bound_func1)
+# boundary2 = Boundary(1,bound_func2)
+
+boundary1 = Ring_XY([0,0],RMAX,ZMAX)
+boundary2 = Ring_XY([0,0],RMAX,-ZMAX)
 
 # -------------------- 顶点坐标（12个点，按角度计算） ----------------------
 num_segments = 6
@@ -61,9 +64,9 @@ volume_constraint = []
 
 from energy import Sq_Mean_Curvature
 web = webstruct(vertex_list, edge_list, face_list,body_list,volume_constraint,Sq_Mean_Curvature())
-for i in range(3):
+for i in range(2):
     web.refinement()
-    iterate_catenoid(web, num_iterations=10)
+    iterate_catenoid(web, num_iterations=20)
 
 ########################################################################################################
 from visualization import plot_mesh

@@ -109,6 +109,7 @@ class Facet:
     _count:int = 0  # Class variable to keep track of the number of facets
     """A class representing a face in a 3D space, defined by three vertices."""
     def __init__(self, vertex1:Vertex, vertex2:Vertex, vertex3:Vertex,face_id:int):
+        # if not(vertex1.vertex_id != vertex2.vertex_id and vertex1.vertex_id != vertex3.vertex_id and vertex2.vertex_id != vertex3.vertex_id):print(vertex1.vertex_id,vertex2.vertex_id,vertex3.vertex_id)
         assert vertex1.vertex_id != vertex2.vertex_id and vertex1.vertex_id != vertex3.vertex_id and vertex2.vertex_id != vertex3.vertex_id, "Vertices must be different"
         Facet._count += 1
         self.facet_id:int = Facet._count  # Unique ID for each facet 
