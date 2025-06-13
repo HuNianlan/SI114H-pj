@@ -423,3 +423,142 @@ class webstruct:
 
                 if vertex.boundary_func is not None:
                     Verts[idx]=torch.tensor(vertex.boundary_func.b_proj(Verts[idx].data))
+
+    # -u equiangulate
+    def eartest(self, v1: Vertex, v2: Vertex, v3: Vertex, v4: Vertex)->bool:
+        incident_edges: list[Edge] = []
+        for edge in self.EDGES:
+            if edge.vertex1 == v1 or edge.vertex2 == v1:
+                incident_edges.append(edge)
+        
+        
+        for edge in incident_edges:
+            # check whether edge(v1, v2) already exists
+            if edge.vertex1 != v2 and edge.vertex2 != v2:
+                continue
+
+            facet_vertex: list[Vertex] = []
+            for facet in self.FACETS:
+                v_ids = facet.vertex_idx
+                if (v1.vertex_id - 1) in v_ids and (v2.vertex_id - 1) in v_ids:
+                    facet_vertex.append({facet.vertex1, facet.vertex2, facet.vertex3, v1, v2})
+
+            if {v3} in facet_vertex or {v4} in facet_vertex:
+                return True
+
+        return False
+    
+    def equiangulate_edge(self, edge: Edge) -> bool:
+        if edge.is_fixed:
+            return False
+        
+        vertex1 = edge.vertex1
+        vertex2 = edge.vertex2
+        vertex1_id = edge.vertex1.vertex_id
+        vertex2_id = edge.vertex2.vertex_id
+
+        matched_facet: list[Facet] = []
+        facet_vertex = []
+        for facet in self.FACETS:
+            v_ids = facet.vertex_idx
+            if (vertex1_id - 1) in v_ids and (vertex2_id - 1) in v_ids:
+                matched_facet.append(facet)
+                facet_vertex.append([facet.vertex1, facet.vertex2, facet.vertex3])
+        
+        if len(matched_facet) != 2:
+            return False
+
+        try:
+            vertex3 = next(v for v in facet_vertex[0] if v.vertex_id != vertex1_id and v.vertex_id != vertex2_id)
+            vertex4 = next(v for v in facet_vertex[1] if v.vertex_id != vertex1_id and v.vertex_id != vertex2_id)
+        except StopIteration:
+            # Degenerate triangle (edge belongs to triangle missing vertices)
+            return False
+
+        if vertex3.vertex_id == vertex4.vertex_id:
+            return False
+    
+        shared = np.linalg.norm(vertex1.coord - vertex2.coord)
+        facet1_edge1 = np.linalg.norm(vertex1.coord - vertex3.coord)
+        facet1_edge2 = np.linalg.norm(vertex2.coord - vertex3.coord)
+        facet2_edge1 = np.linalg.norm(vertex1.coord - vertex4.coord)
+        facet2_edge2 = np.linalg.norm(vertex2.coord - vertex4.coord)
+
+        cos_1 = (facet1_edge1**2 + facet1_edge2**2 - shared**2)/(facet1_edge1 * facet1_edge2)
+        cos_2 = (facet2_edge1**2 + facet2_edge2**2 - shared**2)/(facet2_edge1 * facet2_edge2)
+        if (cos_1 + cos_2) > -0.001:
+            return False
+        
+        if self.eartest(vertex3, vertex4, vertex1, vertex2):
+            return False
+
+        # do swap
+        # facet 1: v1 v2 v3->v1 v3 v4
+        matched_facet[0].vertex1 = vertex1
+        matched_facet[0].vertex2 = vertex3
+        matched_facet[0].vertex3 = vertex4
+        matched_facet[0].vertex_idx = [vertex1.vertex_id-1, vertex3.vertex_id-1, vertex4.vertex_id-1]
+        matched_facet[0].volume = matched_facet[0].compute_volume()
+
+        # facet 2: v1 v2 v4->v2 v3 v4
+        matched_facet[1].vertex1 = vertex2
+        matched_facet[1].vertex2 = vertex3
+        matched_facet[1].vertex3 = vertex4
+        matched_facet[1].vertex_idx = [vertex2.vertex_id-1, vertex3.vertex_id-1, vertex4.vertex_id-1]
+        matched_facet[1].volume = matched_facet[1].compute_volume()
+
+        # delete edge
+        self.EDGES.remove(edge)
+        # add edge
+        if self.find_edge_by_vertices(vertex3, vertex4) == None:
+            self.EDGES.append(Edge(vertex3, vertex4))
+
+        return True
+    
+    def equiangulate(self):
+        count = 0
+        edges_copy: list[Edge] = []
+        for edge in self.EDGES:
+            edges_copy.append(edge)
+        for edge in edges_copy:
+            count += self.equiangulate_edge(edge)
+        return count
+    
+    # -t remove tiny edges
+    def delete_short_edges(self, min_edge_length=1e-5):
+        to_remove = []
+        for edge in self.EDGES:
+            if edge.length() < min_edge_length:
+                v1, v2 = edge.vertex1, edge.vertex2
+                if v1.is_fixed or v2.is_fixed:
+                    continue  # Skip fixed vertices
+                # 合并点: 使用较旧的v1保留，删除v2
+                new_x = (v1.x + v2.x) / 2
+                new_y = (v1.y + v2.y) / 2
+                new_z = (v1.z + v2.z) / 2
+                v1.move(new_x, new_y, new_z)
+                # 替换所有面中v2为v1
+                for facet in self.FACETS:
+                    if facet.vertex1 == v2:
+                        facet.vertex1 = v1
+                    if facet.vertex2 == v2:
+                        facet.vertex2 = v1
+                    if facet.vertex3 == v2:
+                        facet.vertex3 = v1
+                    facet.vertex_idx = [v.vertex_id - 1 for v in [facet.vertex1, facet.vertex2, facet.vertex3]]
+                # 移除相关边
+                to_remove.append(edge)
+                for other in self.EDGES:
+                    if other != edge and (other.vertex1 == v2 or other.vertex2 == v2):
+                        to_remove.append(other)
+                # 删除该点
+                if v2 in self.VERTEXS:
+                    self.VERTEXS.remove(v2)
+
+        # 实际移除边（去重）
+        for edge in set(to_remove):
+            if edge in self.EDGES:
+                self.EDGES.remove(edge)
+        
+        # 删除非法面（重复点）
+        self.FACETS = [f for f in self.FACETS if len(set([f.vertex1.vertex_id, f.vertex2.vertex_id, f.vertex3.vertex_id])) == 3]
