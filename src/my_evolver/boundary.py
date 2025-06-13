@@ -13,7 +13,7 @@ class Boundary:
 
 from math import pi,cos,sin,hypot
 class Ring_XY(Boundary):
-    def __init__(self, center,radius,z_cord=0):
+    def __init__(self, center,radius,z_cord=None):
         self.center = center
         self.radius = radius
         self.z_cord = z_cord
@@ -42,14 +42,18 @@ class Ring_XY(Boundary):
         else:
             proj_x = x0 + self.radius * dx / dist
             proj_y = y0 + self.radius * dy / dist
+        if self.z_cord==None:
+            proj_z = z
+        else:
+            proj_z=self.z_cord
 
-        return (proj_x, proj_y, self.z_cord)
+        return (proj_x, proj_y, proj_z)
 
         
     
 
 class Ring_XZ(Boundary):
-    def __init__(self, center,radius,y_cord=0):
+    def __init__(self, center,radius,y_cord=None):
         self.center = center
         self.radius = radius
         self.y_cord = y_cord
@@ -78,8 +82,12 @@ class Ring_XZ(Boundary):
         else:
             proj_x = x0 + self.radius * dx / dist
             proj_z = z0 + self.radius * dz / dist
+        if self.y_cord ==None:
+            proj_y = y
+        else:
+            proj_y = self.y_cord
 
-        return (proj_x, self.y_cord,proj_z)
+        return (proj_x, proj_y,proj_z)
 
         
     
