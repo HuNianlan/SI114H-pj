@@ -47,11 +47,11 @@ class Vertex:
 class Edge:
     _count:int = 0  # Class variable to keep track of the number of edges
     """A class representing an edge in a 3D space, defined by two vertices."""
-    def __init__(self, vertex1:Vertex, vertex2:Vertex,is_fixed = False,boundary_func = None):
+    def __init__(self, vertex1:Vertex, vertex2:Vertex,is_fixed = False,boundary_func:Boundary = None):
         Edge._count += 1
         self.edge_id:int = Edge._count  # Unique ID for each edge
         # self.edge_id:int = get_next_edge_id()
-        assert vertex1.vertex_id != vertex2.vertex_id, "Vertices must be different"
+        # assert vertex1.vertex_id != vertex2.vertex_id, "Vertices must be different"
         self.vertex1:Vertex = vertex1
         self.vertex2:Vertex = vertex2
         self.is_fixed = is_fixed
@@ -77,12 +77,18 @@ class Face:
     #     self.face_id:int = Face._count  # Unique ID for each face
     #     self.vertexs:list[Vertex] = vertexs
     
-    def __init__(self, vertexs:list[Vertex],edges:list[Edge],ori:list[int]):
+    def __init__(self, vertexs:list[Vertex],edges:list[Edge],ori:list[int],is_fixed = False,boundary_func = None):
         Face._count += 1
         self.face_id:int = Face._count  # Unique ID for each face
         self.edges:list[Edge] = edges
         self.ori:list[int] = ori
         self.vertexs:list[Vertex] = vertexs
+        self.is_fixed = is_fixed
+        self.boundary_func = boundary_func
+        if self.boundary_func == None:
+            self.on_boundary = False
+        else:
+            self.on_boundary = True
     
     def triangulation(self,facets:list=global_state.FACETS,vertexs:list = global_state.VERTEXS,edges:list = global_state.EDGES):
         """Triangulate the face by connecting each edge to the center point"""
@@ -109,8 +115,7 @@ class Facet:
     _count:int = 0  # Class variable to keep track of the number of facets
     """A class representing a face in a 3D space, defined by three vertices."""
     def __init__(self, vertex1:Vertex, vertex2:Vertex, vertex3:Vertex,face_id:int):
-        # if not(vertex1.vertex_id != vertex2.vertex_id and vertex1.vertex_id != vertex3.vertex_id and vertex2.vertex_id != vertex3.vertex_id):print(vertex1.vertex_id,vertex2.vertex_id,vertex3.vertex_id)
-        assert vertex1.vertex_id != vertex2.vertex_id and vertex1.vertex_id != vertex3.vertex_id and vertex2.vertex_id != vertex3.vertex_id, "Vertices must be different"
+        # assert vertex1.vertex_id != vertex2.vertex_id and vertex1.vertex_id != vertex3.vertex_id and vertex2.vertex_id != vertex3.vertex_id, "Vertices must be different"
         Facet._count += 1
         self.facet_id:int = Facet._count  # Unique ID for each facet 
         self.vertex1:Vertex = vertex1

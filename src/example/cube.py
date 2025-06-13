@@ -1,9 +1,5 @@
 import sys
 sys.path.append("my_evolver")
-from utils import get_facet_list1,get_vertex_list1,get_facet_list,get_vertex_list
-from refinement import refinement
-from init import initialize
-import polyscope as ps
 from iterate import iterate
 ########################################################################################################
 vertex_list = [[0.0,0.0,0.0],
@@ -28,18 +24,20 @@ face_list = [[1,10,-5,-9],
 body_list = [[1,2,3,4,5,6]]
 volume_constraint = [1.0]
 ########################################################################################################
-initialize(vertex_list, edge_list, face_list,body_list,volume_constraint)
+# initialize(vertex_list, edge_list, face_list,body_list,volume_constraint)
 
-for i in range(3):
-    iterate(get_vertex_list1(),get_facet_list1(), num_iterations=500)
-    refinement()
+# for i in range(3):
+#     iterate(get_vertex_list1(),get_facet_list1(), num_iterations=5000)
+#     refinement()
 # 2648
 
-
+from web import webstruct
+web = webstruct(vertex_list, edge_list, face_list,body_list,volume_constraint)
+for i in range(3):
+    iterate(web, num_iterations=200)
+    web.refinement()
 ########################################################################################################
-import polyscope as ps
-import numpy as np
-ps.init()
-ps.set_ground_plane_mode('none')
-ps.register_surface_mesh("Mesh_result",np.array(get_vertex_list()),np.array(get_facet_list()))
-ps.show()
+from visualization import plot_mesh
+
+plot_mesh(web.get_vertex_list(), web.get_facet_list(), "Optimized Mesh")
+

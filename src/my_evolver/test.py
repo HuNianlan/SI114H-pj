@@ -10,19 +10,6 @@ from boundary import Boundary,Ring_XZ
 RMAX = 0.1   # minimum radius for height
 ZMAX = 1.0
 
-
-def bound_func1(rho):#upper ring
-    x = RMAX *cos(rho[0])+0.5
-    z = RMAX *sin(rho[0])+0.5
-    y = 1
-    return [x,y,z]
-
-def bound_func2(rho):#lower ring
-    x = RMAX *cos(rho[0])+0.5
-    z = RMAX *sin(rho[0])+0.5
-    y = 0
-    return [x,y,z]
-
 boundary1 = Ring_XZ([0.5,0.5],RMAX,None)
 boundary2 = Ring_XZ([0.5,0.5],RMAX,None)
 

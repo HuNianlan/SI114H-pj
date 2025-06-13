@@ -334,13 +334,15 @@ class webstruct:
         mid = self.find_vertex_by_coordinates(x, y, z)
         if mid is None:
             e = self.find_edge_by_vertices(v1,v2)
-            mid = Vertex(x, y, z,boundary_func=e.boundary_func)
+            if e.boundary_func is not None:
+                x,y,z = e.boundary_func.b_proj([x,y,z])
+            mid = Vertex(x, y, z,e.is_fixed,boundary_func=e.boundary_func)
             self.VERTEXS.append(mid)
         return mid
 
-    def get_or_create_edge(self,v1, v2,boundary=None)->Edge:
+    def get_or_create_edge(self,v1, v2,is_fixed = False,boundary=None)->Edge:
         if self.find_edge_by_vertices(v1, v2) is None:
-            self.EDGES.append(Edge(v1, v2,boundary_func=boundary))
+            self.EDGES.append(Edge(v1, v2,is_fixed=is_fixed,boundary_func=boundary))
 
     def single_facet_refinement(self,facet: Facet):
         v1, v2, v3 = facet.vertex1, facet.vertex2, facet.vertex3
@@ -353,20 +355,20 @@ class webstruct:
         # Create edges (with duplication check)
         e1 = self.find_edge_by_vertices(v1,v2)
         assert e1 != None
-        self.get_or_create_edge(v1, mid12,e1.boundary_func)
-        self.get_or_create_edge(mid12,v2,e1.boundary_func)
+        self.get_or_create_edge(v1, mid12,e1.is_fixed,e1.boundary_func)
+        self.get_or_create_edge(mid12,v2,e1.is_fixed,e1.boundary_func)
         
 
         e2 = self.find_edge_by_vertices(v2,v3)
         assert e2 != None
-        self.get_or_create_edge(v2, mid23,e2.boundary_func)
-        self.get_or_create_edge(mid23,v3,e2.boundary_func)
+        self.get_or_create_edge(v2, mid23,e2.is_fixed,e2.boundary_func)
+        self.get_or_create_edge(mid23,v3,e2.is_fixed,e2.boundary_func)
         
 
         e3 = self.find_edge_by_vertices(v1,v3)
         assert e3 != None
-        self.get_or_create_edge(v3, mid31,e3.boundary_func)
-        self.get_or_create_edge(mid31,v1,e3.boundary_func)
+        self.get_or_create_edge(v3, mid31,e3.is_fixed,e3.boundary_func)
+        self.get_or_create_edge(mid31,v1,e3.is_fixed,e3.boundary_func)
 
         self.get_or_create_edge(mid12, mid23)
         self.get_or_create_edge(mid23, mid31)
@@ -526,6 +528,7 @@ class webstruct:
     
     # -t remove tiny edges
     def delete_short_edges(self, min_edge_length=1e-5):
+        # print(len(self.EDGES))
         to_remove = []
         for edge in self.EDGES:
             if edge.length() < min_edge_length:
@@ -546,19 +549,22 @@ class webstruct:
                     if facet.vertex3 == v2:
                         facet.vertex3 = v1
                     facet.vertex_idx = [v.vertex_id - 1 for v in [facet.vertex1, facet.vertex2, facet.vertex3]]
+
+                for edge in self.EDGES:
+                    if edge.vertex1 == v2:edge.vertex1=v1
+                    elif edge.vertex2==v2:edge.vertex2= v1
                 # 移除相关边
                 to_remove.append(edge)
-                for other in self.EDGES:
-                    if other != edge and (other.vertex1 == v2 or other.vertex2 == v2):
-                        to_remove.append(other)
-                # 删除该点
-                if v2 in self.VERTEXS:
-                    self.VERTEXS.remove(v2)
-
+                
+                # for other in self.EDGES:
+                #     if other != edge and (other.vertex1 == v2 or other.vertex2 == v2):
+                #         to_remove.append(other)
+                
+        print(len(to_remove))
         # 实际移除边（去重）
-        for edge in set(to_remove):
-            if edge in self.EDGES:
-                self.EDGES.remove(edge)
+        # for edge in set(to_remove):
+        #     if edge in self.EDGES:
+        #         self.EDGES.remove(edge)
         
-        # 删除非法面（重复点）
-        self.FACETS = [f for f in self.FACETS if len(set([f.vertex1.vertex_id, f.vertex2.vertex_id, f.vertex3.vertex_id])) == 3]
+        # # 删除非法面（重复点）
+        # self.FACETS = [f for f in self.FACETS if len(set([f.vertex1.vertex_id, f.vertex2.vertex_id, f.vertex3.vertex_id])) == 3]

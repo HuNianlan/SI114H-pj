@@ -1,13 +1,14 @@
+import sys
+sys.path.append("my_evolver")
 from math import pi, cos, sin
-from iterate import iterate_catenoid,iterate
+from iterate import iterate
 
 # -------------------- 初始化数据 --------------------
 from web import webstruct
-from boundary import Boundary,Ring_XY
+from boundary import Ring_XY
 
 RMAX = 1.5088795   # minimum radius for height
 ZMAX = 1.0
-
 
 def bound_func1(rho):#upper ring
     x = RMAX *cos(rho[0])
@@ -21,8 +22,6 @@ def bound_func2(rho):#lower ring
     z = -ZMAX
     return [x,y,z]
 
-# boundary1 = Boundary(1,bound_func1)
-# boundary2 = Boundary(1,bound_func2)
 
 boundary1 = Ring_XY([0,0],RMAX,ZMAX)
 boundary2 = Ring_XY([0,0],RMAX,-ZMAX)
@@ -64,10 +63,10 @@ volume_constraint = []
 
 from energy import Sq_Mean_Curvature
 web = webstruct(vertex_list, edge_list, face_list,body_list,volume_constraint)
-web.equiangulate()
 web.refinement()
-iterate(web, num_iterations=250)
-web.delete_short_edges(0.035)
+web.equiangulate()
+iterate(web, num_iterations=150)
+# web.delete_short_edges(0.001)
 
 ########################################################################################################
 from visualization import plot_mesh

@@ -1,14 +1,7 @@
 import sys
 sys.path.append("my_evolver")
-from utils import get_facet_list,get_vertex_list,get_vertex_list1, get_facet_list1
-import numpy as np
-from refinement import refinement
-from init import initialize
-import polyscope as ps
-import torch
-import numpy as np
 from iterate import iterate
-# 顶点列表：每个点由三个坐标值 (x, y, z) 表示
+
 vertices = [
     [0.0, 0.0, 0.0],  # 1
     [1.0, 0.0, 0.0],  # 2
@@ -23,9 +16,7 @@ vertices = [
     [0.0, 2.0, 1.0],  # 11
     [1.0, 2.0, 1.0],  # 12
 ]
-# vertices = (np.array(vertices)+1).tolist()  # Convert to list of lists
 
-# 边列表：由起点和终点组成，序号从1开始
 edges = [
     [1, 2],
     [2, 3],
@@ -49,7 +40,6 @@ edges = [
     [12, 9],
 ]
 
-# 面列表：由边编号组成，负号代表方向相反
 faces = [
     [1, 10, -5, -9],
     [2, 11, -6, -10],
@@ -64,29 +54,27 @@ faces = [
     [16, -19, -15, -7],
 ]
 
-# 体列表：由面组成，每个体包含面列表和体积
 bodies = [[1, 2, 3, 4, 5, 6], [-3, -7, 8, 9, -10, 11]]
 volume_constraint = [1.0,2.0]
+##################################################################
 
+# initialize(vertices, edges, faces, bodies,volume_constraint)
 
-initialize(vertices, edges, faces, bodies,volume_constraint)
+# Verts:torch.Tensor = get_vertex_list1()
+# Faces:torch.Tensor = get_facet_list1()
 
-# print(utils.facet_diff)
+# for i in range(3):
+#     iterate(get_vertex_list1(),get_facet_list1(), num_iterations=5000)
+#     refinement()
 
-
-Verts:torch.Tensor = get_vertex_list1()
-Faces:torch.Tensor = get_facet_list1()
-
-
-
+##################################################################
+from web import webstruct
+from energy import Sq_Mean_Curvature
+web = webstruct(vertices, edges, faces, bodies,volume_constraint,Sq_Mean_Curvature())
 for i in range(3):
-    iterate(get_vertex_list1(),get_facet_list1(), num_iterations=1000)
-    refinement()
+    iterate(web, num_iterations=50)
+    web.refinement()
 
-import polyscope as ps
-import numpy as np
-ps.init()
-ps.set_ground_plane_mode('none')
-ps.register_surface_mesh("Mesh_result",np.array(get_vertex_list()),np.array(get_facet_list()))
-ps.show()
-
+##################################################################
+from visualization import plot_mesh
+plot_mesh(web.get_vertex_list(), web.get_facet_list(), "Optimized Mesh")

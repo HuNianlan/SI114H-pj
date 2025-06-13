@@ -164,8 +164,9 @@ from iterate import iterate
 from web import webstruct
 web = webstruct(vertices, edges, faces, bodies,volume_constraint)
 for i in range(3):
-    iterate(web, num_iterations=1000)
+    iterate(web, num_iterations=500)
     web.refinement()
+    web.delete_short_edges(0.16)
 
 ########################################################################################################
 from visualization import plot_mesh
