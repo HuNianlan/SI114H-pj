@@ -2,7 +2,7 @@ import global_state
 from Geometric_Elements import Body
 import numpy as np
 import torch
-
+from Geometric_Elements import Vertex,Facet
 
 
 def get_vertex_list() -> list[list[float]]:
@@ -42,4 +42,33 @@ def get_para():
 def get_body_para(bid):
     body:Body = global_state.BODIES[bid-1]
     print(f"body {bid}: volume:{body.compute_volume()}, area:{body.get_surface_area()}")
+
+
+
+def compute_normal(v1:Vertex, v2:Vertex, v3:Vertex):
+    # 计算两个边向量
+    vec1 = v2.coord - v1.coord
+    vec2 = v3.coord - v1.coord
+    # 叉积得到法线向量
+    normal = torch.cross(vec1, vec2)
+    # 单位化（归一化）
+    norm = torch.linalg.norm(normal)
+    if norm == 0:
+        return None  # 退化三角形
+    return normal / norm
+
+def angle_between_facets(facet1:Facet, facet2:Facet):
+    # 提取顶点
+    n1 = compute_normal(facet1.vertex1, facet1.vertex2, facet1.vertex3)
+    n2 = compute_normal(facet2.vertex1, facet2.vertex2, facet2.vertex3)
+
+    if n1 is None or n2 is None:
+        return None  # 法线无效（退化三角形）
+
+    # 点积计算夹角的余弦值
+    cos_theta = np.clip(np.dot(n1, n2), -1.0, 1.0)  # clip防止精度误差超界
+    angle_rad = np.arccos(cos_theta)  # 弧度值
+    angle_deg = np.degrees(angle_rad)  # 角度值（可选）
+    
+    return angle_deg  # 或 angle_deg
 
