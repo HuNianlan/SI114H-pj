@@ -1,5 +1,5 @@
 from math import pi, cos, sin
-from iterate import iterate_catenoid,iterate
+from iterate import iterate
 
 # -------------------- 初始化数据 --------------------
 from web import webstruct

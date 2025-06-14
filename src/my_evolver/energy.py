@@ -115,18 +115,77 @@ class Sq_Mean_Curvature(Energy):
 # where the 1/2 factor comes from the "mean" part of "mean curvature". This vertex's contribution to the total integral is then
 # E = h2A/3 = (3/4)F^2/A.
 
+class ContactEnergy(Energy):
+    """A class to compute the contact energy of a liquid droplet on a solid surface."""
+    def __init__(self, contact_angle=90.0, surface_tension=1.0, plane_height=0.0):
+        """
+        Initialize the contact energy calculator.
+        
+        Args:
+            contact_angle (float): Contact angle in degrees (typically between 0 and 180)
+            surface_tension (float): Liquid-gas surface tension coefficient
+            plane_height (float): Z-coordinate of the contact plane (default 0.0)
+        """
+        super().__init__('contact_energy')
+        self.theta = torch.deg2rad(torch.tensor(contact_angle))
+        self.sigma = surface_tension  # 表面张力系数
+        self.plane_height = plane_height  # 接触平面高度
+        self.plane_normal = torch.tensor([0., 0., 1.])  # 假设平面法向为Z轴
+        
+    def compute_energy(self, Verts: torch.Tensor, Facets: torch.Tensor) -> torch.Tensor:
+        """
+        Compute the contact line energy based on Young's equation.
+        
+        Args:
+            Verts: [N, 3] Tensor of vertex positions
+            Facets: [M, 3] Tensor of triangle vertex indices
+            
+        Returns:
+            torch.Tensor: Scalar contact energy value
+        """
+        # 找出所有与平面相交的边
+        contact_length = self._compute_contact_length(Verts,Facets)
+        # 接触能: E = σ*(cosθ - 1)*L (Young方程)
+        return -self.sigma * (torch.cos(self.theta)) * contact_length
+    
 
-class GravityPotential(Energy):
-    def __init__(self, gravity=torch.tensor([0.0, -9.8, 0.0])):
-        super().__init__('gravity')
-        self.gravity = gravity  # 重力加速度向量
-
-    def compute_energy(self, Verts: torch.Tensor, Facets: torch.Tensor):
-        # 重力势能: E = -m * g * y (假设质量为1)
-        return -torch.sum(Verts[:, 0.000000001] * self.gravity[1])  # y方向分量
-
-    def compute_and_store_gradient(self, Verts, Facets):
-        # 梯度: F = -∇E = m * g (方向向下)
-        self.e_grad = torch.zeros_like(Verts)
-        self.e_grad[:, :3] = self.gravity  # 所有顶点受相同的力
+    def compute_and_store_gradient(self, Verts: torch.Tensor, Facets: torch.Tensor) -> torch.Tensor:
+        """
+        Compute the gradient of contact energy with respect to vertex positions.
+        
+        Args:
+            Verts: [N, 3] Tensor of vertex positions
+            Facets: [M, 3] Tensor of triangle vertex indices
+            
+        Returns:
+            torch.Tensor: [N, 3] gradient tensor
+        """
+        # 使用自动微分计算梯度
+        self.e_grad = torch.autograd.functional.jacobian(
+            lambda x: self.compute_energy(x, Facets), 
+            Verts,
+            create_graph=True
+        )
         return self.e_grad
+
+    def _compute_contact_length(self, Verts: torch.Tensor, Facets: torch.Tensor) -> torch.Tensor:
+        contact_length = 0.0
+        edge_count = set()  # 用于去重
+        
+        for f in Facets:
+            v0, v1, v2 = Verts[f[0]], Verts[f[1]], Verts[f[2]]
+            # 统计在平面上的顶点数
+            on_plane = [torch.isclose(v[2], torch.tensor(0.0)) for v in [v0, v1, v2]]
+            num_on_plane = sum(on_plane)
+            
+            # 情况1：两个顶点在平面上（完全在平面上的边）
+            if num_on_plane == 2:
+                # 找到在平面上的两个顶点
+                indices = [i for i, is_on in enumerate(on_plane) if is_on]
+                va, vb = Verts[f[indices[0]]], Verts[f[indices[1]]]
+                # 去重后计入长度
+                edge_key = tuple(sorted((f[indices[0]].item(), f[indices[1]].item())))
+                if edge_key not in edge_count:
+                    contact_length += torch.norm(vb - va)
+                    edge_count.add(edge_key)
+        return contact_length

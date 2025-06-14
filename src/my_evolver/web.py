@@ -188,9 +188,9 @@ import numpy as np
 import math
 from collections import defaultdict, deque
 class webstruct:
-    def __init__(self,vertex_list, edge_list, face_list,body_list=None,volume_constraint=None,energy:Energy = Area(),sdim = 3):#默认body constraint只有volume
+    def __init__(self,vertex_list, edge_list, face_list,body_list=None,volume_constraint=None,energy_terms:list[Energy] = [Area()],sdim = 3):#默认body constraint只有volume
         self.sdim = sdim #dimension of ambient space
-        self.energy:Energy = energy
+        self.ENERGY:list[Energy] = energy_terms #! catenoid也要改
         self.VERTEXS:list[Vertex] = []
         self.EDGES:list[Edge]=[]
         self.FACES:list[Face]=[]
@@ -389,7 +389,8 @@ class webstruct:
         original_facets = self.FACETS[:n]
 
         for facet in original_facets:
-            self.single_facet_refinement(facet)
+            if facet.is_valid():
+                self.single_facet_refinement(facet)
 
         del self.FACETS[:n]  # Remove original facets
         del self.EDGES[:m]   # Remove old edges
@@ -564,14 +565,12 @@ class webstruct:
                 
         print(f"Detelted edges:{len(to_remove)}")
         # 实际移除边（去重）
-        for edge in set(to_remove):
-            if edge in self.EDGES:
-                self.EDGES.remove(edge)
-        
+        # for edge in set(to_remove):
+        #     if edge in self.EDGES:
+        #         self.EDGES.remove(edge)
         # # 删除非法面（重复点）
         # self.FACETS = [f for f in self.FACETS if len(set([f.vertex1.vertex_id, f.vertex2.vertex_id, f.vertex3.vertex_id])) == 3]
 
-    # def 
 
 
 

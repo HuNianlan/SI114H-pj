@@ -1,10 +1,3 @@
-# from utils import get_facet_list,get_vertex_list,get_vertex_list1, get_facet_list1
-# import numpy as np
-# from refinement import refinement
-# from init import initialize
-# import polyscope as ps
-# import torch
-# import numpy as np
 from iterate import iterate
 
 vertices = [
@@ -62,20 +55,8 @@ faces = [
 bodies = [[1, 2, 3, 4, 5, 6], [-3, -7, 8, 9, -10, 11]]
 volume_constraint = [1.0,2.0]
 ##################################################################
-
-# initialize(vertices, edges, faces, bodies,volume_constraint)
-
-# Verts:torch.Tensor = get_vertex_list1()
-# Faces:torch.Tensor = get_facet_list1()
-
-# for i in range(3):
-#     iterate(get_vertex_list1(),get_facet_list1(), num_iterations=5000)
-#     refinement()
-
-##################################################################
 from web import webstruct
-from energy import Sq_Mean_Curvature
-web = webstruct(vertices, edges, faces, bodies,volume_constraint,Sq_Mean_Curvature())
+web = webstruct(vertices, edges, faces, bodies,volume_constraint)
 for i in range(3):
     iterate(web, num_iterations=50)
     web.refinement()
