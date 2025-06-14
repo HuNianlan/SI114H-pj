@@ -67,7 +67,11 @@ web = webstruct(vertex_list, edge_list, face_list,body_list,volume_constraint)
 web.equiangulate()
 web.refinement()
 iterate(web, num_iterations=250)
-web.delete_short_edges(0.035)
+web.delete_short_edges(0.042)
+# 0.042
+web.pop_vertex()
+# iterate(web, num_iterations=5)
+iterate(web, num_iterations=500)
 
 ########################################################################################################
 from visualization import plot_mesh

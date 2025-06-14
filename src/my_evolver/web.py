@@ -186,6 +186,7 @@ from energy import Energy,Area
 from Geometric_Elements import Vertex,Edge,Face,Facet,Body
 import numpy as np
 import math
+from collections import defaultdict, deque
 class webstruct:
     def __init__(self,vertex_list, edge_list, face_list,body_list=None,volume_constraint=None,energy:Energy = Area(),sdim = 3):#默认body constraint只有volume
         self.sdim = sdim #dimension of ambient space
@@ -536,6 +537,7 @@ class webstruct:
                 if v1.is_fixed or v2.is_fixed:
                     continue  # Skip fixed vertices
                 # 合并点: 使用较旧的v1保留，删除v2
+                # print(f"{v1.vertex_id},{v2.vertex_id}\\")
                 new_x = (v1.x + v2.x) / 2
                 new_y = (v1.y + v2.y) / 2
                 new_z = (v1.z + v2.z) / 2
@@ -560,11 +562,201 @@ class webstruct:
                 #     if other != edge and (other.vertex1 == v2 or other.vertex2 == v2):
                 #         to_remove.append(other)
                 
-        print(len(to_remove))
+        print(f"Detelted edges:{len(to_remove)}")
         # 实际移除边（去重）
-        # for edge in set(to_remove):
-        #     if edge in self.EDGES:
-        #         self.EDGES.remove(edge)
+        for edge in set(to_remove):
+            if edge in self.EDGES:
+                self.EDGES.remove(edge)
         
         # # 删除非法面（重复点）
         # self.FACETS = [f for f in self.FACETS if len(set([f.vertex1.vertex_id, f.vertex2.vertex_id, f.vertex3.vertex_id])) == 3]
+
+    # def 
+
+
+
+    def is_minimal_tangent_cone(self,vertex:Vertex):
+        # 收集所有包含该顶点的三角形
+        # for vertex in self.VERTEXS:
+        adjacent_faces = [face for face in self.FACETS if vertex==face.vertex1 or vertex==face.vertex2 or vertex==face.vertex3]
+        
+        # 收集所有在这些三角形中与该点相连的边（不包括自身）
+        edge_count = defaultdict(int)
+        neighbor_vertices = set()
+
+        for face in adjacent_faces:
+            fv1 = face.vertex1
+            fv2 = face.vertex2
+            fv3 = face.vertex3
+            fvs= [fv1,fv2,fv3]
+            others = [v for v in fvs if v!=vertex]
+            for v in others:
+                neighbor_vertices.add(v)
+                # edge = tuple(sorted((vertex.vertex_id, v)))
+                edge = self.find_edge_by_vertices(vertex,v)
+                if edge!=None:
+                    edge_count[edge.edge_id] += 1
+
+        # 检查是否有非流形边（同一边重复次数超过1）
+        # for edge, count in edge_count.items():
+        #     if count > 2:
+        #         # print(f"Non-manifold edge found: {edge}")
+        #         print(vertex.vertex_id)
+        #         return False
+
+        # 检查邻居是否可以形成连续环（拓扑连续）
+        # 构建一个邻接图（只考虑邻居之间的连接）
+        neighbor_graph = defaultdict(list)
+        for face in adjacent_faces:
+            fv1 = face.vertex1
+            fv2 = face.vertex2
+            fv3 = face.vertex3
+            fvs= [fv1,fv2,fv3]
+            others = [v for v in fvs if v!=vertex]
+            if len(others) == 2:
+                a, b = others
+                if a.vertex_id!=b.vertex_id:
+                    neighbor_graph[a.vertex_id].append(b.vertex_id)
+                    neighbor_graph[b.vertex_id].append(a.vertex_id)
+
+        # 用 BFS/DFS 检查邻接图是否连通且形成一个单环
+        if neighbor_graph==defaultdict(list):return True,[]
+        # print(neighbor_graph,vertex.vertex_id)
+        cycles_count,cycle = count_cycles_and_find_one(neighbor_graph)
+        if  cycles_count ==0:
+            print("Neighbor ring is not connected.")
+            return False,[]
+        
+
+        # 检查每个邻居的度是否为2（表示构成一个环）
+        for node, neighbors in neighbor_graph.items():
+            if len(neighbors) != 2:
+                print(f"Vertex {node} has degree {len(neighbors)}, expected 2.")
+                return False,[]
+        if cycles_count==2:
+            print(f"Vertex {vertex.vertex_id} has arc 2,dup_vertex!")
+            return False,cycle
+
+        # 如果通过所有检查，认为是理想的锥
+        return True,[]
+
+    def tanget_check_all(self):
+        for v in self.VERTEXS:
+            if v.is_fixed:continue
+            self.is_minimal_tangent_cone(v)
+    
+
+    def pop_vertex(self):
+        for v in self.VERTEXS:
+            if v.is_fixed:continue
+            valid,cycle=self.is_minimal_tangent_cone(v)
+            if valid is False and cycle!=[]:
+                newv= self.duplicate_vertex(v)
+                # print(newv)
+                for v_id in cycle:
+                    neighbour = self.VERTEXS[v_id-1]
+                    assert neighbour.vertex_id==v_id
+                    for face in self.FACETS:
+                        fv1 = face.vertex1
+                        fv2 = face.vertex2
+                        fv3 = face.vertex3
+                        fvs= [fv1,fv2,fv3]
+                        if  (neighbour in fvs) and (v in fvs):
+                            if fv1==v:face.vertex1=newv
+                            if fv2==v:face.vertex2=newv
+                            if fv3==v:face.vertex3=newv
+                print("Vertex poped:1")
+                return
+        print("Vertex poped:0")
+                
+    def duplicate_vertex(self,v:Vertex):
+        newv=Vertex(v.x,v.y,v.z,v.is_fixed,v.boundary_func)
+        self.VERTEXS.append(Vertex(v.x,v.y,v.z,v.is_fixed,v.boundary_func))
+        return newv
+
+
+def count_cycles(neighbor_graph):
+    """
+    统计无向图中环的个数。
+
+    参数：
+        neighbor_graph (dict[int, list[int]]): 邻接表表示的无向图。
+
+    返回：
+        int: 图中环的总数。
+    """
+    visited = set()
+    total_cycles = 0
+
+    def dfs(node, parent):
+        nonlocal edge_count, vertex_count
+        visited.add(node)
+        vertex_count += 1
+        for neighbor in neighbor_graph[node]:
+            edge_count += 1
+            if neighbor not in visited:
+                dfs(neighbor, node)
+
+    for node in neighbor_graph:
+        if node not in visited:
+            edge_count = 0
+            vertex_count = 0
+            dfs(node, -1)
+            # 每条边被统计了两次（无向图）
+            edges = edge_count // 2
+            cycles = edges - vertex_count + 1
+            total_cycles += max(0, cycles)
+
+    return total_cycles
+
+
+# for ( i = 0 ; i < cinfo->cells ; i++ )
+#   { vertex_id newv;
+#     ar = cinfo->arclist + cinfo->cell[i].start;
+#     if ( (cinfo->cell[i].num != 1) || (ar->valence != 2) ) continue;
+#     /* now have one */
+#     newv = dup_vertex(v_id);
+#     for ( j = 0 ; j < ar->num ; j++ )
+#     { fe = cinfo->felist[ar->start+j];
+#       ray_e = get_fe_edge(get_next_edge(fe));
+#       remove_vertex_edge(v_id,inverse_id(ray_e));
+#       set_edge_headv(ray_e,newv);
+#     }
+#     return 1;    /* safe to do only one at a time */
+
+
+def count_cycles_and_find_one(graph):
+    """
+    统计图中环的数量，并返回其中一个环路径。
+    输入:
+        graph: dict[int, list[int]] - 无向图邻接表
+    返回:
+        (int, list[int]) - (环的数量, 其中一个环路径)
+    """
+    visited = set()
+    cycles = []
+    parent = {}
+
+    def dfs(node, prev, path):
+        visited.add(node)
+        path.append(node)
+        for neighbor in graph[node]:
+            if neighbor == prev:
+                continue
+            if neighbor in path:
+                # 找到环
+                idx = path.index(neighbor)
+                cycle = path[idx:] + [neighbor]
+                cycle_set = set(cycle)
+                # 防止重复环（集合比较）
+                if all(cycle_set != set(c) for c in cycles):
+                    cycles.append(cycle)
+            elif neighbor not in visited:
+                parent[neighbor] = node
+                dfs(neighbor, node, path.copy())
+
+    for node in graph:
+        if node not in visited:
+            dfs(node, None, [])
+
+    return len(cycles), cycles[0][:-1] if cycles else []
