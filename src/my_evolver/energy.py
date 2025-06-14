@@ -115,18 +115,64 @@ class Sq_Mean_Curvature(Energy):
 # where the 1/2 factor comes from the "mean" part of "mean curvature". This vertex's contribution to the total integral is then
 # E = h2A/3 = (3/4)F^2/A.
 
+def compute_volume(Verts: torch.Tensor, Facets: torch.Tensor) -> float:
+    """计算封闭曲面的体积（散度定理）可能在body中有这个函数，但是如何调用等下再调整"""
+    volume = 0.0
+    for f in Facets:
+        v0, v1, v2 = Verts[f[0]], Verts[f[1]], Verts[f[2]]
+        volume += torch.dot(v0, torch.cross(v1, v2)) / 6.0
+    return volume.abs()  # 保证正值
 
 class GravityPotential(Energy):
-    def __init__(self, gravity=torch.tensor([0.0, -9.8, 0.0])):
+    """物理一致性如何处理？"""
+    def __init__(self, gravity=torch.tensor([0.0, -9.8, 0.0]), density=1.0):
         super().__init__('gravity')
-        self.gravity = gravity  # 重力加速度向量
+        self.gravity = gravity  
+        self.density = density  # 质量密度（能量缩放因子）
 
     def compute_energy(self, Verts: torch.Tensor, Facets: torch.Tensor):
-        # 重力势能: E = -m * g * y (假设质量为1)
-        return -torch.sum(Verts[:, 0.000000001] * self.gravity[1])  # y方向分量
-
+        # 计算质心高度（假设均匀密度）
+        centroid_z = torch.mean(Verts[:, 2])  #? 所有顶点Z坐标均值
+        # 计算当前体积（需提前通过Volume约束计算）
+        volume = compute_volume(Verts, Facets)  #? 需要实现体积计算
+        # 重力势能: E = density * (g·centroid) * volume
+        return self.density * volume * torch.dot(self.gravity, 
+                                              torch.tensor([0, 0, centroid_z]))
+    
     def compute_and_store_gradient(self, Verts, Facets):
-        # 梯度: F = -∇E = m * g (方向向下)
+        # 梯度: F = -∇E = density * volume * g （均匀分布到所有顶点）
+        volume = compute_volume(Verts, Facets)
         self.e_grad = torch.zeros_like(Verts)
-        self.e_grad[:, :3] = self.gravity  # 所有顶点受相同的力
+        self.e_grad += (self.density * volume * self.gravity) / len(Verts)
         return self.e_grad
+    
+class ContactEnergy(Energy):
+    def __init__(self, contact_angle=90, surface_tension=1.0):
+        super().__init__('contact_energy')
+        self.theta = torch.deg2rad(torch.tensor(contact_angle))
+        self.sigma = surface_tension  # 表面张力系数
+        self.plane_normal = torch.tensor([0., 0., 1.])  # 假设平面在Z=0
+
+    def compute_energy(self, Verts: torch.Tensor, Facets: torch.Tensor):
+        # 计算接触线长度（与平面相交的边）
+        contact_length = 0.0
+        for f in Facets:
+            z_coords = Verts[f, 2]  # Z坐标
+            if (z_coords.min() <= 0) != (z_coords.max() <= 0):  # 跨越Z=0
+                contact_length += self._compute_edge_contact_length(Verts[f])
+        
+        # 接触能: E = σ*(cosθ - 1)*L (Young方程)
+        return self.sigma * (torch.cos(self.theta) - 1) * contact_length
+
+    def _compute_edge_contact_length(self, triangle_verts):
+        # 计算三角形与平面的交线长度
+        crossings = []
+        for i in range(3):
+            v1, v2 = triangle_verts[i], triangle_verts[(i+1)%3]
+            if (v1[2] * v2[2]) <= 0:  # 边跨越Z=0
+                t = -v1[2] / (v2[2] - v1[2])
+                cross_point = v1 + t * (v2 - v1)
+                crossings.append(cross_point[:2])  # 取XY平面投影
+        if len(crossings) == 2:
+            return torch.norm(crossings[0] - crossings[1])
+        return 0.0

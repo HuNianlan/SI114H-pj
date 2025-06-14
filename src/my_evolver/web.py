@@ -187,9 +187,9 @@ from Geometric_Elements import Vertex,Edge,Face,Facet,Body
 import numpy as np
 import math
 class webstruct:
-    def __init__(self,vertex_list, edge_list, face_list,body_list=None,volume_constraint=None,energy:Energy = Area(),sdim = 3):#默认body constraint只有volume
+    def __init__(self,vertex_list, edge_list, face_list,body_list=None,volume_constraint=None,energy_terms=[Area()],sdim = 3):
         self.sdim = sdim #dimension of ambient space
-        self.energy:Energy = energy
+        self.ENERGY:list[Energy] = energy_terms #! catenoid也要改
         self.VERTEXS:list[Vertex] = []
         self.EDGES:list[Edge]=[]
         self.FACES:list[Face]=[]

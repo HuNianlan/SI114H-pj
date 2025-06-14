@@ -34,7 +34,7 @@ def estimate_decrease() -> float:
 import torch
 from optimizer import Adam,LineSearchSolver
 from largesteps.solvers import CholeskySolver, ConjugateGradientSolver
-from energy import Area,Energy, GravityPotential, Sq_Mean_Curvature
+from energy import Area,Energy, GravityPotential, Sq_Mean_Curvature, ContactEnergy
 from constraint import Volume,Constraint
 
 
@@ -112,7 +112,7 @@ def iterate_catenoid(web:webstruct, num_iterations: int = 10):
         # print(E_grad)
         # Verts_requires_grad = -E_grad[6:].clone()
         # 4. 设置 Verts 的梯度
-        Verts.grad = E_grad*mask.float()
+        Verts.grad = E_grad*mask.float() #? 這是在幹什麼
         # Verts.grad = E_grad
         # 5. 梯度下降更新
         optimizer.step()
@@ -123,7 +123,64 @@ def iterate_catenoid(web:webstruct, num_iterations: int = 10):
 
     web.update_vertex_coordinates(Verts)
 
+def iterate_mound(
+    web: webstruct,
+    num_iterations: int = 10,
+    gravity_enabled: bool = False,
+    contact_angle: float = 90
+):
+    """
+    液滴专用的迭代优化函数
+    参数：
+        gravity_enabled: 是否启用重力
+        contact_angle: 接触角（度）
+    """
+    Verts = web.get_vertex_tensor()
+    Faces = web.get_facet_tensor()
+    Verts.requires_grad_(True)
+    
+    # 初始化能量系统
+    # energy_terms = [
+    #     Area(),
+    #     ContactEnergy(angle=contact_angle)  # 接触角能量
+    # ]
+    # if gravity_enabled:
+    #     energy_terms.append(GravityPotential(gravity=9.8))
+    # volume_constraint = Volume(target_volume=1.0)  #? 体积约束如何调用？
+    
+    # 优化器配置
+    optimizer = Adam([{'params': Verts, 'lr': 0.01}])
+    
+    for _ in range(num_iterations):
+        optimizer.zero_grad()
+        
+        # ---- 1. 计算总能量和梯度 ----
 
+        E_grad = torch.zeros_like(Verts)
+        for energy in web.ENERGY:
+            E_grad += energy.compute_and_store_gradient(Verts, Faces)
+        
+        # ---- 2. 处理体积约束 (强约束) ----#? 说实话看不懂，约束之类的怎么处理啊
+        if web.BODIES:
+            body = web.BODIES[0]
+            volume_grad = body.constraints[0].compute_gradient(Verts, Faces)
+            # 投影法确保体积守恒
+            with torch.no_grad():
+                volume_error = body.constraints[0].compute(Verts, Faces) - body.constraints[0].target_value
+                Verts -= (volume_error / (volume_grad**2).sum()) * volume_grad
+        
+        # ---- 3. 应用平面约束 ----
+        with torch.no_grad():
+            mask = web.get_vertex_mask()  # 获取固定顶点掩码
+            Verts.grad *= mask.float()    # 只更新非固定顶点
+            optimizer.step()
+            web.apply_plane_constraint(Verts)  # 强制Z=0
+        
+        # ---- 4. 实时监控 ----
+        # if _ % 5 == 0:
+        #     print(f"Iter {_}: Energy={E_grad:.3f}") 
+    
+    web.update_vertex_coordinates(Verts)
 
 
 def iterate(web:webstruct,num_iterations:int=10):
@@ -132,11 +189,6 @@ def iterate(web:webstruct,num_iterations:int=10):
     Verts.requires_grad = True
     optimizer =Adam([{'params': Verts,'lr':0.01}]) #Choice of gradient descent scheme
     # optimizer =LineSearchSolver(energy_fn)([{'params': Verts,'lr':0.01}]) #Choice of gradient descent scheme
-
-    # 初始化能量项
-    energy_terms = [Area()]  # 默认包含面积能, may changed to willmore energy
-    # if use_gravity:
-    #     energy_terms.append(GravityPotential())
         
     lambda_=10.0
     M = compute_matrix(Verts, Faces, lambda_)
@@ -146,13 +198,13 @@ def iterate(web:webstruct,num_iterations:int=10):
     for _ in (range(num_iterations)):
         mask = torch.tensor(web.get_vertex_mask())
         # 合并所有能量梯度
-        total_E_grad = torch.zeros_like(Verts)
-        for energy in energy_terms:
-            total_E_grad += energy.compute_and_store_gradient(Verts, Faces)
+        E_grad = torch.zeros_like(Verts)
+        for energy in web.ENERGY:
+            E_grad += energy.compute_and_store_gradient(Verts, Faces)
         
         #Compute energy and volume gradients
-        E_grad = web.energy.compute_and_store_gradient(Verts,Faces)
-        V_grad = torch.empty((len(web.BODIES),len(Verts),3)) # 如果每个body只有一个constrains，后面要改
+        # E_grad = web.energy.compute_and_store_gradient(Verts,Faces)
+        V_grad = torch.empty((len(web.BODIES),len(Verts),3)) #? 如果每个body只有一个constrains，后面要改
         target_val = torch.empty(len(web.BODIES))
         real_val = torch.empty(len(web.BODIES))
         
@@ -165,7 +217,7 @@ def iterate(web:webstruct,num_iterations:int=10):
                 real_val[idx] = cons.compute_constraint(Verts,b_f,Signs = b.get_facet_sign())
 
         P = torch.sum(torch.sum((V_grad*V_grad.unsqueeze(1)),dim=3),dim=2)
-        Q = torch.sum(torch.sum(total_E_grad*V_grad,dim=2),dim=1)
+        Q = torch.sum(torch.sum(E_grad*V_grad,dim=2),dim=1)
         
         R = (target_val-real_val) #residual volume
         F = torch.linalg.solve(P,Q)
@@ -174,7 +226,7 @@ def iterate(web:webstruct,num_iterations:int=10):
         with torch.no_grad():
             Verts -= torch.sum(((V_grad.transpose(0,2))*M).transpose(0,2),dim=0)
 
-        Verts.grad=(total_E_grad-torch.sum(((V_grad.transpose(0,2))*F).transpose(0,2),dim=0))*mask.float()
+        Verts.grad=(E_grad-torch.sum(((V_grad.transpose(0,2))*F).transpose(0,2),dim=0))*mask.float()
 
         # Verts.grad = solver.solve(Verts.grad) # solver for linear system we can substitute with the cg solver
 

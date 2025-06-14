@@ -1,4 +1,4 @@
-# import torch
+import torch
 class Boundary:
     '''A class to define the boundary function on vertex or edge'''
     def __init__(self,num_par,func = None):
@@ -89,6 +89,34 @@ class Ring_XZ(Boundary):
 
         return (proj_x, proj_y,proj_z)
 
-        
-    
+class LevelSetConstraint_Plane(Boundary):
+    def __init__(self, normal_vector, point_on_plane):
+        """
+        :param normal_vector: 平面的法向量，如 [0,0,1] 表示 xy-平面
+        :param point_on_plane: 平面上的一个点，如 [0,0,0]
+        """
+        self.normal = normal_vector  # 法向量 [a,b,c]
+        self.point = point_on_plane  # 平面上点 [x0,y0,z0]
+        # 平面方程: a(x-x0) + b(y-y0) + c(z-z0) = 0
 
+        # 无参数化函数，直接继承 Boundary
+        super().__init__(0, func=None)
+
+    def b_proj(self, cord):
+        """
+        将点 cord = [x,y,z] 投影到平面上
+        """
+        x, y, z = cord
+        a, b, c = self.normal
+        x0, y0, z0 = self.point
+
+        # 计算点到平面的距离
+        distance = a*(x - x0) + b*(y - y0) + c*(z - z0)
+        denom = a**2 + b**2 + c**2
+
+        # 投影点坐标
+        proj_x = x - a * distance / denom
+        proj_y = y - b * distance / denom
+        proj_z = z - c * distance / denom
+
+        return (proj_x, proj_y, proj_z)
