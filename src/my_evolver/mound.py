@@ -4,9 +4,7 @@ from energy import Area, ContactEnergy
 from iterate import iterate
 from boundary import LevelSetConstraint_Plane
 
-#! 平面约束，约束怎么设计在里面？有的有约束有的没有呀
 boundary1 = LevelSetConstraint_Plane([0,0,1], [0,0,0])
-# boundary2 = 
 
 vertex_list = [
     # 基底接触线顶点 (Z=0，constraint 1)
@@ -35,17 +33,17 @@ edge_list = [
     [3, 4, False, boundary1],   # 边3：顶点3 → 顶点4 (顶部)
     [4, 1, False, boundary1],   # 边4：顶点4 → 顶点1 (左侧)
     
-    # ---- 液滴侧面边 ----
-    [1, 5, False, None],  # 边5：顶点1 → 顶点5
-    [2, 6, False, None],  # 边6：顶点2 → 顶点6
-    [3, 7, False, None],  # 边7：顶点3 → 顶点7
-    [4, 8, False, None],  # 边8：顶点4 → 顶点8
-    
     # ---- 液滴顶部边 ----
     [5, 6, False, None],  # 边9：顶点5 → 顶点6
     [6, 7, False, None],  # 边10：顶点6 → 顶点7
     [7, 8, False, None],  # 边11：顶点7 → 顶点8
     [8, 5, False, None],  # 边12：顶点8 → 顶点5
+    
+    # ---- 液滴侧面边 ----
+    [1, 5, False, None],  # 边5：顶点1 → 顶点5
+    [2, 6, False, None],  # 边6：顶点2 → 顶点6
+    [3, 7, False, None],  # 边7：顶点3 → 顶点7
+    [4, 8, False, None],  # 边8：顶点4 → 顶点8
     
     # ---- 固定平面边界 (no_refine) ----
     [9, 10, True, None],  # 边13：顶点9 → 顶点10
@@ -70,7 +68,7 @@ energy_terms = [Area(), ContactEnergy()]
 web = webstruct(vertex_list, edge_list, face_list,body_list,volume_constraint, energy_terms) 
 for i in range(2):
     web.refinement()
-    iterate(web, num_iterations=20)
+    iterate(web, num_iterations=50)
 
 ########################################################################################################
 from visualization import plot_mesh
