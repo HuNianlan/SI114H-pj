@@ -146,103 +146,143 @@ class GravityPotential(Energy):
         self.e_grad += (self.density * volume * self.gravity) / len(Verts)
         return self.e_grad
     
-class ContactEnergy(Energy):
-    """A class to compute the contact energy of a liquid droplet on a solid surface."""
-    def __init__(self, contact_angle=90.0, surface_tension=1.0, plane_height=0.0):
-        """
-        Initialize the contact energy calculator.
+# class ContactEnergy(Energy):
+#     """A class to compute the contact energy of a liquid droplet on a solid surface."""
+#     def __init__(self, contact_angle=90.0, surface_tension=1.0, plane_height=0.0):
+#         """
+#         Initialize the contact energy calculator.
         
-        Args:
-            contact_angle (float): Contact angle in degrees (typically between 0 and 180)
-            surface_tension (float): Liquid-gas surface tension coefficient
-            plane_height (float): Z-coordinate of the contact plane (default 0.0)
-        """
+#         Args:
+#             contact_angle (float): Contact angle in degrees (typically between 0 and 180)
+#             surface_tension (float): Liquid-gas surface tension coefficient
+#             plane_height (float): Z-coordinate of the contact plane (default 0.0)
+#         """
+#         super().__init__('contact_energy')
+#         self.theta = torch.deg2rad(torch.tensor(contact_angle))
+#         self.sigma = surface_tension  # 表面张力系数
+#         self.plane_height = plane_height  # 接触平面高度
+#         self.plane_normal = torch.tensor([0., 0., 1.])  # 假设平面法向为Z轴
+        
+#     def compute_energy(self, Verts: torch.Tensor, Facets: torch.Tensor) -> torch.Tensor:
+#         """
+#         Compute the contact line energy based on Young's equation.
+        
+#         Args:
+#             Verts: [N, 3] Tensor of vertex positions
+#             Facets: [M, 3] Tensor of triangle vertex indices
+            
+#         Returns:
+#             torch.Tensor: Scalar contact energy value
+#         """
+#         # 找出所有与平面相交的边
+#         contact_edges = self._find_contact_edges(Verts, Facets)
+        
+#         # 计算接触线总长度
+#         contact_length = torch.sum(contact_edges)
+        
+#         # 接触能: E = σ*(cosθ - 1)*L (Young方程)
+#         return self.sigma * (torch.cos(self.theta) - 1) * contact_length
+    
+#     def _find_contact_edges(self, Verts: torch.Tensor, Facets: torch.Tensor) -> torch.Tensor:
+#         """
+#         Find all edges intersecting with the contact plane and compute their lengths.
+        
+#         Args:
+#             Verts: [N, 3] Tensor of vertex positions
+#             Facets: [M, 3] Tensor of triangle vertex indices
+            
+#         Returns:
+#             torch.Tensor: Lengths of all contact edges
+#         """
+#         contact_lengths = []
+        
+#         for f in Facets:
+#             # 获取三角形的三个顶点
+#             v0, v1, v2 = Verts[f[0]], Verts[f[1]], Verts[f[2]]
+            
+#             # 检查三角形是否与平面相交
+#             signs = torch.stack([
+#                 v0[2] - self.plane_height,
+#                 v1[2] - self.plane_height,
+#                 v2[2] - self.plane_height
+#             ])
+            
+#             # 如果符号不一致，说明三角形与平面相交
+#             if not (torch.all(signs >= 0) or torch.all(signs <= 0)):
+#                 # 找出与平面相交的两条边
+#                 intersections = []
+#                 for i in range(3):
+#                     va = Verts[f[i]]
+#                     vb = Verts[f[(i+1)%3]]
+#                     if (va[2] - self.plane_height) * (vb[2] - self.plane_height) <= 0:
+#                         # 计算交点
+#                         t = (self.plane_height - va[2]) / (vb[2] - va[2])
+#                         cross_point = va + t * (vb - va)
+#                         intersections.append(cross_point)
+                
+#                 # 如果有两个交点，计算它们之间的距离
+#                 if len(intersections) == 2:
+#                     edge_length = torch.norm(intersections[1] - intersections[0])
+#                     contact_lengths.append(edge_length)
+        
+#         return torch.stack(contact_lengths) if contact_lengths else torch.tensor(0.0)
+    
+#     def compute_and_store_gradient(self, Verts: torch.Tensor, Facets: torch.Tensor) -> torch.Tensor:
+#         """
+#         Compute the gradient of contact energy with respect to vertex positions.
+        
+#         Args:
+#             Verts: [N, 3] Tensor of vertex positions
+#             Facets: [M, 3] Tensor of triangle vertex indices
+            
+#         Returns:
+#             torch.Tensor: [N, 3] gradient tensor
+#         """
+#         # 使用自动微分计算梯度
+#         self.e_grad = torch.autograd.functional.jacobian(
+#             lambda x: self.compute_energy(x, Facets), 
+#             Verts,
+#             create_graph=True
+#         )
+#         return self.e_grad
+
+class ContactEnergy(Energy):
+    def __init__(self, contact_angle=90.0, surface_tension=1.0, plane_height=0.0):
         super().__init__('contact_energy')
         self.theta = torch.deg2rad(torch.tensor(contact_angle))
-        self.sigma = surface_tension  # 表面张力系数
-        self.plane_height = plane_height  # 接触平面高度
-        self.plane_normal = torch.tensor([0., 0., 1.])  # 假设平面法向为Z轴
-        
+        self.sigma = surface_tension
+        self.plane_height = plane_height
+
     def compute_energy(self, Verts: torch.Tensor, Facets: torch.Tensor) -> torch.Tensor:
-        """
-        Compute the contact line energy based on Young's equation.
-        
-        Args:
-            Verts: [N, 3] Tensor of vertex positions
-            Facets: [M, 3] Tensor of triangle vertex indices
-            
-        Returns:
-            torch.Tensor: Scalar contact energy value
-        """
-        # 找出所有与平面相交的边
-        contact_edges = self._find_contact_edges(Verts, Facets)
-        
-        # 计算接触线总长度
-        contact_length = torch.sum(contact_edges)
-        
-        # 接触能: E = σ*(cosθ - 1)*L (Young方程)
+        contact_length = self._compute_contact_length(Verts, Facets)
         return self.sigma * (torch.cos(self.theta) - 1) * contact_length
-    
-    def _find_contact_edges(self, Verts: torch.Tensor, Facets: torch.Tensor) -> torch.Tensor:
-        """
-        Find all edges intersecting with the contact plane and compute their lengths.
-        
-        Args:
-            Verts: [N, 3] Tensor of vertex positions
-            Facets: [M, 3] Tensor of triangle vertex indices
-            
-        Returns:
-            torch.Tensor: Lengths of all contact edges
-        """
-        contact_lengths = []
+
+    def _compute_contact_length(self, Verts: torch.Tensor, Facets: torch.Tensor) -> torch.Tensor:
+        contact_length = 0.0
+        edge_count = set()  # 用于去重
         
         for f in Facets:
-            # 获取三角形的三个顶点
             v0, v1, v2 = Verts[f[0]], Verts[f[1]], Verts[f[2]]
+            # 统计在平面上的顶点数
+            on_plane = [torch.isclose(v[2], torch.tensor(0.0)) for v in [v0, v1, v2]]
+            num_on_plane = sum(on_plane)
             
-            # 检查三角形是否与平面相交
-            signs = torch.stack([
-                v0[2] - self.plane_height,
-                v1[2] - self.plane_height,
-                v2[2] - self.plane_height
-            ])
-            
-            # 如果符号不一致，说明三角形与平面相交
-            if not (torch.all(signs >= 0) or torch.all(signs <= 0)):
-                # 找出与平面相交的两条边
-                intersections = []
-                for i in range(3):
-                    va = Verts[f[i]]
-                    vb = Verts[f[(i+1)%3]]
-                    if (va[2] - self.plane_height) * (vb[2] - self.plane_height) <= 0:
-                        # 计算交点
-                        t = (self.plane_height - va[2]) / (vb[2] - va[2])
-                        cross_point = va + t * (vb - va)
-                        intersections.append(cross_point)
-                
-                # 如果有两个交点，计算它们之间的距离
-                if len(intersections) == 2:
-                    edge_length = torch.norm(intersections[1] - intersections[0])
-                    contact_lengths.append(edge_length)
-        
-        return torch.stack(contact_lengths) if contact_lengths else torch.tensor(0.0)
-    
+            # 情况1：两个顶点在平面上（完全在平面上的边）
+            if num_on_plane == 2:
+                # 找到在平面上的两个顶点
+                indices = [i for i, is_on in enumerate(on_plane) if is_on]
+                va, vb = Verts[f[indices[0]]], Verts[f[indices[1]]]
+                # 去重后计入长度
+                edge_key = tuple(sorted((f[indices[0]].item(), f[indices[1]].item())))
+                if edge_key not in edge_count:
+                    contact_length += torch.norm(vb - va)
+                    edge_count.add(edge_key)
+        return contact_length
+
     def compute_and_store_gradient(self, Verts: torch.Tensor, Facets: torch.Tensor) -> torch.Tensor:
-        """
-        Compute the gradient of contact energy with respect to vertex positions.
-        
-        Args:
-            Verts: [N, 3] Tensor of vertex positions
-            Facets: [M, 3] Tensor of triangle vertex indices
-            
-        Returns:
-            torch.Tensor: [N, 3] gradient tensor
-        """
-        # 使用自动微分计算梯度
         self.e_grad = torch.autograd.functional.jacobian(
             lambda x: self.compute_energy(x, Facets), 
             Verts,
             create_graph=True
         )
         return self.e_grad
-

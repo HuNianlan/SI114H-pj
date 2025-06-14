@@ -8,22 +8,22 @@ boundary1 = LevelSetConstraint_Plane([0,0,1], [0,0,0])
 
 vertex_list = [
     # 基底接触线顶点 (Z=0，constraint 1)
-    [0.0, 0.0, 0.0, False, boundary1],   # 顶点1 (左下)
-    [1.0, 0.0, 0.0, False, boundary1],    # 顶点2 (右下)
-    [1.0, 1.0, 0.0, False, boundary1],    # 顶点3 (右上)
-    [0.0, 1.0, 0.0, False, boundary1],    # 顶点4 (左上)
+    [[0.0, 0.0, 0.0], False, boundary1],   # 顶点1 (左下)
+    [[1.0, 0.0, 0.0], False, boundary1],    # 顶点2 (右下)
+    [[1.0, 1.0, 0.0], False, boundary1],    # 顶点3 (右上)
+    [[0.0, 1.0, 0.0], False, boundary1],    # 顶点4 (左上)
     
     # 液滴顶部顶点 (初始Z=1，可移动)
-    [0.0, 0.0, 1.0, False, None],   # 顶点5 
-    [1.0, 0.0, 1.0, False, None],   # 顶点6
-    [1.0, 1.0, 1.0, False, None],   # 顶点7
-    [0.0, 1.0, 1.0, False, None],   # 顶点8
+    [[0.0, 0.0, 1.0], False, None],   # 顶点5 
+    [[1.0, 0.0, 1.0], False, None],   # 顶点6
+    [[1.0, 1.0, 1.0], False, None],   # 顶点7
+    [[0.0, 1.0, 1.0], False, None],   # 顶点8
     
     # 固定平面边界顶点 (fixed，用于可视化)
-    [2.0, 2.0, 0.0, True, None],    # 顶点9
-    [2.0, -1.0, 0.0, True, None],   # 顶点10
-    [-1.0, -1.0, 0.0, True, None],  # 顶点11
-    [-1.0, 2.0, 0.0, True, None]    # 顶点12
+    [[2.0, 2.0, 0.0], True, None],    # 顶点9
+    [[2.0, -1.0, 0.0], True, None],   # 顶点10
+    [[-1.0, -1.0, 0.0], True, None],  # 顶点11
+    [[-1.0, 2.0, 0.0], True, None]    # 顶点12
 ]
 
 edge_list = [
