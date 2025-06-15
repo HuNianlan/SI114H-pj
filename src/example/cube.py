@@ -24,18 +24,17 @@ face_list = [[1,10,-5,-9],
 body_list = [[1,2,3,4,5,6]]
 volume_constraint = [1.0]
 ########################################################################################################
-# initialize(vertex_list, edge_list, face_list,body_list,volume_constraint)
-
-# for i in range(3):
-#     iterate(get_vertex_list1(),get_facet_list1(), num_iterations=5000)
-#     refinement()
-# 2648
-
 from web import webstruct
 web = webstruct(vertex_list, edge_list, face_list,body_list,volume_constraint)
-for i in range(3):
-    iterate(web, num_iterations=200)
+for i in range(4):
+    iterate(web, num_iterations=500)
     web.refinement()
+
+# from energy import Area
+# import math
+# print(f"facets:{len(web.FACETS)}")
+# print(f"max angle: {math.degrees(web.compute_max_normal_angle())}")
+# print(f"energy: {Area().compute_energy(web.get_vertex_tensor(), web.get_facet_tensor())}")
 ########################################################################################################
 from visualization import plot_mesh
 

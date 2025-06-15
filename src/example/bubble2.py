@@ -57,24 +57,17 @@ faces = [
 bodies = [[1, 2, 3, 4, 5, 6], [-3, -7, 8, 9, -10, 11]]
 volume_constraint = [1.0,2.0]
 ##################################################################
-
-# initialize(vertices, edges, faces, bodies,volume_constraint)
-
-# Verts:torch.Tensor = get_vertex_list1()
-# Faces:torch.Tensor = get_facet_list1()
-
-# for i in range(3):
-#     iterate(get_vertex_list1(),get_facet_list1(), num_iterations=5000)
-#     refinement()
-
-##################################################################
 from web import webstruct
-from energy import Sq_Mean_Curvature
-web = webstruct(vertices, edges, faces, bodies,volume_constraint,Sq_Mean_Curvature())
+web = webstruct(vertices, edges, faces, bodies,volume_constraint)
 for i in range(3):
     iterate(web, num_iterations=50)
     web.refinement()
 
+# from energy import Area
+# import math
+# print(f"facets:{len(web.FACETS)}")
+# print(f"max angle: {math.degrees(web.compute_max_normal_angle())}")
+# print(f"energy: {Area().compute_energy(web.get_vertex_tensor(), web.get_facet_tensor())}")
 ##################################################################
 from visualization import plot_mesh
 plot_mesh(web.get_vertex_list(), web.get_facet_list(), "Optimized Mesh")

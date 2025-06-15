@@ -67,11 +67,11 @@ web = webstruct(vertex_list, edge_list, face_list,body_list,volume_constraint)
 web.equiangulate()
 web.refinement()
 iterate(web, num_iterations=250)
-web.delete_short_edges(0.042)
+web.delete_short_edges(0.05)
 # 0.042
 web.pop_vertex()
-# iterate(web, num_iterations=5)
-iterate(web, num_iterations=500)
+iterate(web, num_iterations=5)
+# iterate(web, num_iterations=500)
 
 # print(f"facets:{len(web.FACETS)}")
 ########################################################################################################
