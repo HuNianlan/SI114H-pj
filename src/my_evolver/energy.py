@@ -146,7 +146,7 @@ class ContactEnergy(Energy):
         # 找出所有与平面相交的边
         contact_length = self._compute_contact_length(Verts,Facets)
         # 接触能: E = σ*(cosθ - 1)*L (Young方程)
-        return -self.sigma * (torch.cos(self.theta)-1) * contact_length
+        return -self.sigma * (torch.cos(self.theta)) * contact_length
     
 
     def compute_and_store_gradient(self, Verts: torch.Tensor, Facets: torch.Tensor) -> torch.Tensor:

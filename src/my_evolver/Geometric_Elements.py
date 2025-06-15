@@ -1,5 +1,4 @@
 import torch
-import global_state
 from boundary import Boundary
 class Vertex:
     """A class representing a vertex in a 3D space with an ID, coordinates, and neighbors.
@@ -93,7 +92,7 @@ class Face:
         else:
             self.on_boundary = True
     
-    def triangulation(self,facets:list=global_state.FACETS,vertexs:list = global_state.VERTEXS,edges:list = global_state.EDGES):
+    def triangulation(self,facets:list,vertexs:list,edges:list):
         """Triangulate the face by connecting each edge to the center point"""
         n = len(self.vertexs)
         if n == 3:
@@ -189,7 +188,7 @@ class Body:
     def add_constraints(self,constraint:Constraint):
         self.constraints.append(constraint)
 
-    def compute_volume(self,FACETS:list[Facet] = global_state.FACETS) -> float:
+    def compute_volume(self,FACETS:list[Facet]) -> float:
         """Calculate the volume of the body using the divergence theorem."""
         volume = 0.0
         for facet in FACETS:
@@ -201,7 +200,7 @@ class Body:
         return volume
 
 
-    def get_surface_area(self,FACETS:list[Facet] = global_state.FACETS) -> float:
+    def get_surface_area(self,FACETS:list[Facet]) -> float:
         """Calculate the surface area of the body."""
         surface_area = 0.0
         for facet in FACETS:
@@ -209,11 +208,11 @@ class Body:
                 surface_area += facet.area()
         return surface_area
 
-    def update_facet_list(self,FACETS:list[Facet] = global_state.FACETS):
+    def update_facet_list(self,FACETS:list[Facet]):
         """Update the list of facets in the body based on the current FACETS."""
         self.facets = [f.facet_id for f in FACETS if f._face_id in self.faces]
 
-    def update_facet_sign(self,FACETS:list[Facet] = global_state.FACETS):
+    def update_facet_sign(self,FACETS:list[Facet]):
         """Get the signs of the facets in the body."""
         sign = []
         for f in FACETS:

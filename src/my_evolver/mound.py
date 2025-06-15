@@ -63,14 +63,13 @@ face_list = [
 
 body_list = [[1, 2, 3, 4, 5]]
 volume_constraint = [1.0]
-energy_terms = [Area(),ContactEnergy(contact_angle=120,surface_tension=1)]
+energy_terms = [Area(),ContactEnergy(contact_angle=90,surface_tension=1)]
 # energy_terms = [Sq_Mean_Curvature(),ContactEnergy(contact_angle=120,surface_tension=1)]
 
 web = webstruct(vertex_list, edge_list, face_list,body_list,volume_constraint, energy_terms)
-web.equiangulate() 
 for i in range(3):
+    iterate(web, num_iterations=100)
     web.refinement()
-    iterate(web, num_iterations=10)
 
 # web.refinement()
 # iterate(web, num_iterations=200)
