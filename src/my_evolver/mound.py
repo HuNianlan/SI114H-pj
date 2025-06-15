@@ -1,5 +1,5 @@
 from web import webstruct
-from energy import Area, ContactEnergy
+from energy import Area, ContactEnergy,Sq_Mean_Curvature
 # from constraint import PlaneConstraint
 from iterate import iterate
 from boundary import LevelSetConstraint_Plane
@@ -63,12 +63,21 @@ face_list = [
 
 body_list = [[1, 2, 3, 4, 5]]
 volume_constraint = [1.0]
-energy_terms = [Area(),ContactEnergy()]
+energy_terms = [Area(),ContactEnergy(contact_angle=120,surface_tension=1)]
+# energy_terms = [Sq_Mean_Curvature(),ContactEnergy(contact_angle=120,surface_tension=1)]
 
-web = webstruct(vertex_list, edge_list, face_list,body_list,volume_constraint, energy_terms) 
-for i in range(2):
+web = webstruct(vertex_list, edge_list, face_list,body_list,volume_constraint, energy_terms)
+web.equiangulate() 
+for i in range(3):
     web.refinement()
-    iterate(web, num_iterations=500)
+    iterate(web, num_iterations=10)
+
+# web.refinement()
+# iterate(web, num_iterations=200)
+# web.refinement()
+# iterate(web, num_iterations=100)
+# web.ENERGY=[Area(),ContactEnergy(contact_angle=120,surface_tension=10)]
+# iterate(web, num_iterations=100)
 
 
 ########################################################################################################
