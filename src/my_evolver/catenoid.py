@@ -5,9 +5,13 @@ from iterate import iterate
 from web import webstruct
 from boundary import Boundary,Ring_XY
 
+# unstable
 RMAX = 1.5088795   # minimum radius for height
 ZMAX = 1.0
 
+# #stable
+# RMAX = 1.3   # minimum radius for height
+# ZMAX = 0.7
 
 def bound_func1(rho):#upper ring
     x = RMAX *cos(rho[0])
@@ -72,6 +76,10 @@ web.delete_short_edges(0.05)
 web.pop_vertex()
 iterate(web, num_iterations=5)
 # iterate(web, num_iterations=500)
+
+# web.refinement()
+# iterate(web, num_iterations=500)
+
 
 # print(f"facets:{len(web.FACETS)}")
 ########################################################################################################
