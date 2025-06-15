@@ -73,6 +73,7 @@ web.pop_vertex()
 # iterate(web, num_iterations=5)
 iterate(web, num_iterations=500)
 
+# print(f"facets:{len(web.FACETS)}")
 ########################################################################################################
 from visualization import plot_mesh
 

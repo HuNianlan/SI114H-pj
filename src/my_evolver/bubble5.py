@@ -168,6 +168,7 @@ for i in range(3):
     web.refinement()
     web.delete_short_edges(0.16)
 
+# print(f"facets:{len(web.FACETS)}")
 ########################################################################################################
 from visualization import plot_mesh
 

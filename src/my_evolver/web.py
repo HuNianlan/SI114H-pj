@@ -187,6 +187,7 @@ from Geometric_Elements import Vertex,Edge,Face,Facet,Body
 import numpy as np
 import math
 from collections import defaultdict, deque
+from itertools import combinations
 class webstruct:
     def __init__(self,vertex_list, edge_list, face_list,body_list=None,volume_constraint=None,energy_terms:list[Energy] = [Area()],sdim = 3):#默认body constraint只有volume
         self.sdim = sdim #dimension of ambient space
@@ -673,6 +674,52 @@ class webstruct:
         self.VERTEXS.append(Vertex(v.x,v.y,v.z,v.is_fixed,v.boundary_func))
         return newv
 
+    # for test
+    def find_adjacent_facets(self, facets: list[Facet]):
+        """根据共享两个顶点构建Facet的邻接表"""
+        edge_to_facets = defaultdict(set)
+        for facet in facets:
+            vid = [facet.vertex1.vertex_id, facet.vertex2.vertex_id, facet.vertex3.vertex_id]
+            for e in combinations(sorted(vid), 2):
+                edge_to_facets[e].add(facet.facet_id)
+
+        adjacency = defaultdict(set)
+        for shared_facets in edge_to_facets.values():
+            if len(shared_facets) > 1:
+                for f1, f2 in combinations(shared_facets, 2):
+                    adjacency[f1].add(f2)
+                    adjacency[f2].add(f1)
+        return adjacency
+
+    def compute_max_normal_angle(self):
+        """计算所有相邻三角面之间法向量夹角的最大值（弧度）"""
+        normals = {}
+        for facet in self.FACETS:
+            v1 = facet.vertex1.coord
+            v2 = facet.vertex2.coord
+            v3 = facet.vertex3.coord
+            normal = torch.cross(v2 - v1, v3 - v1)
+            norm = torch.norm(normal)
+            if norm > 0:
+                normal = normal / norm
+            normals[facet.facet_id] = normal
+
+        adjacency = self.find_adjacent_facets(self.FACETS)
+
+        max_angle = 0.0
+        visited = set()
+        for f1_id, neighbors in adjacency.items():
+            for f2_id in neighbors:
+                if (f1_id, f2_id) in visited or (f2_id, f1_id) in visited:
+                    continue
+                visited.add((f1_id, f2_id))
+                n1 = normals[f1_id]
+                n2 = normals[f2_id]
+                dot_product = torch.clamp(torch.dot(n1, n2), -1.0, 1.0)  # 数值稳定性
+                angle = torch.acos(dot_product).item()  # 返回弧度值
+                if angle > max_angle:
+                    max_angle = angle
+        return max_angle  
 
 def count_cycles(neighbor_graph):
     """

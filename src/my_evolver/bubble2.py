@@ -61,6 +61,11 @@ for i in range(3):
     iterate(web, num_iterations=50)
     web.refinement()
 
+# from energy import Area
+# import math
+# print(f"facets:{len(web.FACETS)}")
+# print(f"max angle: {math.degrees(web.compute_max_normal_angle())}")
+# print(f"energy: {Area().compute_energy(web.get_vertex_tensor(), web.get_facet_tensor())}")
 ##################################################################
 from visualization import plot_mesh
 plot_mesh(web.get_vertex_list(), web.get_facet_list(), "Optimized Mesh")
